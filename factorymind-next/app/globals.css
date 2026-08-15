@@ -1,4 +1,4 @@
-﻿/* =====================================================
+/* =====================================================
                 FACTORYMIND AI
         Professional Smart Factory Dashboard
 ======================================================*/
@@ -1286,7 +1286,7 @@ footer{
     font-size: 10.5px;
     font-weight: 700;
     letter-spacing: 0.20em;
-    color: #00E5FF;
+    color: #ffffff;
     margin-bottom: 22px;
     opacity: 0.9;
     text-transform: uppercase;
@@ -1296,15 +1296,15 @@ footer{
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #00E5FF;
-    box-shadow: 0 0 10px #00E5FF, 0 0 20px rgba(0,229,255,0.5);
+    background: #ffffff;
+    box-shadow: 0 0 10px #ffffff, 0 0 20px rgba(255,255,255,0.6);
     animation: lp-dot-pulse 2.4s ease-in-out infinite;
     flex-shrink: 0;
 }
 
 @keyframes lp-dot-pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 10px #00E5FF, 0 0 20px rgba(0,229,255,0.5); }
-    50%       { opacity: 0.5; box-shadow: 0 0 4px #00E5FF; }
+    0%, 100% { opacity: 1; box-shadow: 0 0 10px #ffffff, 0 0 20px rgba(255,255,255,0.6); }
+    50%       { opacity: 0.5; box-shadow: 0 0 4px #ffffff; }
 }
 
 /* Title */
@@ -1355,7 +1355,7 @@ footer{
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: #00E5FF;
+    background: #ffffff;
     color: #050505;
     border: none;
     padding: 15px 38px;
@@ -1367,16 +1367,16 @@ footer{
     transition: all 0.3s cubic-bezier(.22, 1, .36, 1);
     width: fit-content;
     box-shadow:
-        0 0 40px rgba(0, 229, 255, 0.28),
+        0 0 40px rgba(255, 255, 255, 0.35),
         0 4px 24px rgba(0, 0, 0, 0.45);
     letter-spacing: 0.01em;
 }
 
 .lp-cta:hover:not(:disabled) {
-    background: #3af9ff;
+    background: #f0f0f0;
     transform: translateY(-3px);
     box-shadow:
-        0 0 70px rgba(0, 229, 255, 0.50),
+        0 0 70px rgba(255, 255, 255, 0.65),
         0 10px 35px rgba(0, 0, 0, 0.55);
 }
 
