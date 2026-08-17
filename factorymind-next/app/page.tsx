@@ -2,23 +2,47 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth, UserRole, ROLE_PERMISSIONS } from "@/context/AuthContext";
+import AuthModal from "@/components/AuthModal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUserShield,
+  faUserTie,
+  faUserGear,
+  faRightToBracket,
+  faCircleUser,
+  faArrowRight,
+  faShieldHalved,
+} from "@fortawesome/free-solid-svg-icons";
 
 export default function LandingPage() {
   const [transitioning, setTransitioning] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>("ADMIN");
   const router = useRouter();
+  const { user, quickLoginAsRole, isAuthenticated } = useAuth();
 
-  const handleEnterDashboard = () => {
+  const handleEnterDashboard = (roleToUse?: UserRole) => {
     if (transitioning) return;
+    const targetRole = roleToUse || selectedRole;
+    quickLoginAsRole(targetRole);
     setTransitioning(true);
-    // Wait for the door panels to slide apart, then navigate
     setTimeout(() => {
       router.push("/dashboard");
     }, 1100);
   };
 
+  const currentRoleConfig = ROLE_PERMISSIONS[selectedRole];
+
   return (
     <>
-      {/* Door grow overlay — white rectangle starts at door position, expands to fill screen */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => handleEnterDashboard()}
+      />
+
+      {/* Door grow overlay — expands to fill screen */}
       {transitioning && (
         <div className="door-grow" aria-hidden="true" />
       )}
@@ -42,12 +66,12 @@ export default function LandingPage() {
           </video>
         </div>
 
-        {/* Top-Left Brand */}
+        {/* Top Header with Brand on Left & Auth on Right */}
         <header className="lp-header">
           <div className="lp-brand">
             <svg
-              width="26"
-              height="40"
+              width="28"
+              height="42"
               viewBox="0 0 31.5 48.5"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -77,57 +101,115 @@ export default function LandingPage() {
             </svg>
             <span className="lp-brand-name">FactoryMind AI</span>
           </div>
+
+          <div className="lp-auth-actions">
+            {isAuthenticated && user ? (
+              <div
+                className="lp-user-pill"
+                onClick={() => setAuthModalOpen(true)}
+                title="Active identity — click to switch"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={user.avatar} alt={user.name} className="lp-user-avatar" />
+                <div className="lp-user-info">
+                  <span className="lp-user-name">{user.name}</span>
+                  <span className={`role-badge-pill role-badge-${user.role.toLowerCase()}`}>
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            <button
+              className="lp-signin-btn"
+              onClick={() => setAuthModalOpen(true)}
+              disabled={transitioning}
+            >
+              <FontAwesomeIcon icon={faRightToBracket} />
+              <span>{isAuthenticated ? "Switch Account" : "Sign In"}</span>
+            </button>
+          </div>
         </header>
 
-        {/* Hero */}
+        {/* Hero Section (Left-Aligned, Framed Cleanly) */}
         <main className="lp-hero">
-          <div className="lp-content">
+          <div className="lp-content-card">
             <div className="lp-eyebrow">
               <span className="lp-dot" />
-              INDUSTRY 4.0 &nbsp;·&nbsp; DIGITAL TWIN &nbsp;·&nbsp; PREDICTIVE
-              AI
+              <span>INDUSTRY 4.0 &nbsp;·&nbsp; DIGITAL TWIN &nbsp;·&nbsp; 3-ROLE RBAC</span>
             </div>
 
-            <h1 className="lp-title">FactoryMind AI</h1>
-
-            <p className="lp-sub">
-              Autonomous Digital Twin Platform
-              <br />
-              for Smart Factory Intelligence
-            </p>
+            <h1 className="lp-title">
+              Autonomous Smart Factory <span>Intelligence</span>
+            </h1>
 
             <p className="lp-desc">
-              Monitor every machine in real-time. Predict failures before they
-              happen. Automate maintenance with AI agents — all from one unified
-              dashboard.
+              Real-time digital twin monitoring and autonomous predictive AI tailored for <strong>Administration</strong>, <strong>Supervisors</strong>, and <strong>Operators</strong>.
             </p>
 
+            {/* Interactive 3-Role Fast-Track Selector */}
+            <div className="lp-role-section">
+              <div className="lp-role-section-header">
+                <FontAwesomeIcon icon={faShieldHalved} style={{ color: currentRoleConfig.color, fontSize: 13 }} />
+                <span>Select Access Clearance:</span>
+              </div>
+
+              <div className="lp-role-tabs">
+                <button
+                  type="button"
+                  className={`lp-role-tab admin ${selectedRole === "ADMIN" ? "active" : ""}`}
+                  onClick={() => setSelectedRole("ADMIN")}
+                >
+                  <FontAwesomeIcon icon={faUserShield} className="role-tab-icon" />
+                  <div className="role-tab-meta">
+                    <strong>Administration</strong>
+                    <span>Full System Control</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`lp-role-tab supervisor ${selectedRole === "SUPERVISOR" ? "active" : ""}`}
+                  onClick={() => setSelectedRole("SUPERVISOR")}
+                >
+                  <FontAwesomeIcon icon={faUserTie} className="role-tab-icon" />
+                  <div className="role-tab-meta">
+                    <strong>Supervisor</strong>
+                    <span>Shift & Operations</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`lp-role-tab user ${selectedRole === "USER" ? "active" : ""}`}
+                  onClick={() => setSelectedRole("USER")}
+                >
+                  <FontAwesomeIcon icon={faUserGear} className="role-tab-icon" />
+                  <div className="role-tab-meta">
+                    <strong>Operator</strong>
+                    <span>Floor Telemetry</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Launch CTA */}
             <div className="lp-actions">
               <button
                 className="lp-cta"
-                onClick={handleEnterDashboard}
+                onClick={() => handleEnterDashboard(selectedRole)}
                 disabled={transitioning}
                 id="enter-dashboard-btn"
               >
-                Enter Dashboard
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+                <span>Launch Dashboard as {currentRoleConfig.name}</span>
+                <FontAwesomeIcon icon={faArrowRight} className="lp-cta-arrow" />
               </button>
 
+              {/* Stats row */}
               <div className="lp-stats">
                 <div className="lp-stat">
                   <strong>26</strong>
-                  <span>Machines</span>
+                  <span>Active Machines</span>
                 </div>
                 <div className="lp-divider" />
                 <div className="lp-stat">
@@ -148,11 +230,13 @@ export default function LandingPage() {
         <div className="lp-bottom-bar">
           <span>Powered by Agentic AI</span>
           <span className="lp-sep">·</span>
-          <span>Real-Time Digital Twin</span>
+          <span>Dual-Model Predictive Maintenance</span>
           <span className="lp-sep">·</span>
-          <span>Predictive Maintenance</span>
+          <span>ISO/IEC Industrial Security Standards</span>
         </div>
       </div>
     </>
   );
 }
+
+
