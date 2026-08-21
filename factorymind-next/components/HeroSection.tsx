@@ -1,16 +1,28 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faUserShield,
+  faUserTie,
+  faUserGear,
+  faArrowRight,
+  faBolt,
+  faShieldHalved,
+} from "@fortawesome/free-solid-svg-icons";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  onOpenDigitalTwin?: () => void;
+  onOpenAiInsights?: () => void;
+}
+
+export default function HeroSection({
+  onOpenDigitalTwin,
+  onOpenAiInsights,
+}: HeroSectionProps) {
+  const { user, role } = useAuth();
   const [health, setHealth] = useState(96);
-  const digitalTwinRef = useRef<HTMLElement | null>(null);
-  const aiSectionRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    digitalTwinRef.current = document.querySelector(".digital-twin-section");
-    aiSectionRef.current = document.querySelector(".ai-section");
-  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -24,38 +36,84 @@ export default function HeroSection() {
     return () => clearInterval(id);
   }, []);
 
-  const scrollTo = (ref: React.MutableRefObject<HTMLElement | null>) => {
-    ref.current?.scrollIntoView({ behavior: "smooth" });
+  const handleDigitalTwinClick = () => {
+    if (onOpenDigitalTwin) {
+      onOpenDigitalTwin();
+    } else {
+      const el = document.querySelector(".digital-twin-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
   };
+
+  const handleAiInsightsClick = () => {
+    if (onOpenAiInsights) {
+      onOpenAiInsights();
+    } else {
+      const el = document.querySelector(".ai-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const isAdmin = role === "ADMIN";
+  const isSupervisor = role === "SUPERVISOR";
 
   return (
     <section className="hero">
       <div className="hero-content">
         <div>
-          <h2>Smart Factory Intelligence Dashboard</h2>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.08)", padding: "4px 12px", borderRadius: 20, marginBottom: 12, fontSize: 12 }}>
+            <FontAwesomeIcon
+              icon={isAdmin ? faUserShield : isSupervisor ? faUserTie : faUserGear}
+              style={{ color: isAdmin ? "#f59e0b" : isSupervisor ? "#06b6d4" : "#10b981" }}
+            />
+            <span style={{ fontWeight: 600, color: "#cbd5e1" }}>
+              {isAdmin
+                ? "Executive Leadership Portal"
+                : isSupervisor
+                ? "Shift Supervisor Station"
+                : "Machine Operator Workcell"}
+            </span>
+            <span style={{ color: "rgba(255,255,255,0.4)" }}>·</span>
+            <span style={{ color: "#94a3b8" }}>{user?.department || "Plant Floor"}</span>
+          </div>
+
+          <h2>
+            {isAdmin && "Smart Factory Executive Governance"}
+            {isSupervisor && "Shift Production & Line Supervision"}
+            {!isAdmin && !isSupervisor && "Operator Workcell Control Hub"}
+          </h2>
+
           <p>
-            Monitor every machine in real time using Digital Twin, Predictive
-            Maintenance and Agentic AI.
+            {isAdmin &&
+              `Welcome back, ${user?.name || "Director"}. Full plant 26-machine fleet telemetry, autonomous multi-agent policies, and executive compliance controls are active.`}
+            {isSupervisor &&
+              `Welcome back, ${user?.name || "Supervisor"}. Line operations, technician dispatch, real-time vibration alarms, and shift target execution are under your watch.`}
+            {!isAdmin && !isSupervisor &&
+              `Welcome, ${user?.name || "Operator"}. Connected to your assigned machining cell. Live motor telemetry, tool-life indicators, and safety checklists are active.`}
           </p>
+
           <div className="hero-buttons">
             <button
               className="primary-btn"
-              onClick={() => scrollTo(digitalTwinRef)}
+              onClick={handleDigitalTwinClick}
+              id="hero-open-digital-twin-btn"
             >
-              Open Digital Twin
+              {isAdmin ? "Open Global Digital Twin" : isSupervisor ? "Open Shift Digital Twin" : "Open Assigned Workcell"}
             </button>
             <button
               className="secondary-btn"
-              onClick={() => scrollTo(aiSectionRef)}
+              onClick={handleAiInsightsClick}
+              id="hero-ai-insights-btn"
             >
-              AI Insights
+              {isAdmin ? "AI Governance Insights" : isSupervisor ? "Floor Diagnostics" : "Operator Safety Guide"}
             </button>
           </div>
         </div>
+
         <div className="hero-status">
           <div className="status-circle">
             <h1>{health}%</h1>
-            <p>Factory Health</p>
+            <p>{isAdmin ? "Plant Health" : isSupervisor ? "Shift Line Health" : "Workcell Health"}</p>
           </div>
         </div>
       </div>

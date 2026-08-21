@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import DashboardNav from "@/components/DashboardNav";
+import AuthModal from "@/components/AuthModal";
 
 // Views
 import HeroSection from "@/components/HeroSection";
@@ -34,6 +35,7 @@ import {
   faArrowRotateLeft,
   faRobot,
   faXmark,
+  faKey,
 } from "@fortawesome/free-solid-svg-icons";
 
 
@@ -74,60 +76,55 @@ function PageView({ children, sectionKey }: { children: React.ReactNode; section
   );
 }
 
-/* ─── Access Restricted Guard View ─── */
+/* ─── RBAC Access Restricted Card Component ─── */
 function AccessRestrictedView({
   sectionTitle,
   currentRole,
-  onSwitchRole,
+  onRequestElevate,
   onGoHome,
 }: {
   sectionTitle: string;
   currentRole: UserRole;
-  onSwitchRole: (role: UserRole) => void;
+  onRequestElevate: (role: UserRole) => void;
   onGoHome: () => void;
 }) {
-  const roleInfo = ROLE_PERMISSIONS[currentRole];
+  const currentRoleInfo = ROLE_PERMISSIONS[currentRole];
 
   return (
     <div className="access-restricted-card">
-      <div className="restricted-icon-wrap">
-        <FontAwesomeIcon icon={faLock} className="restricted-lock-icon" />
+      <div className="access-restricted-icon-wrap">
+        <FontAwesomeIcon icon={faLock} />
       </div>
 
-      <div className="restricted-badge-row">
-        <span className="restricted-pill">Access Restricted</span>
-        <span className={`role-badge-pill role-badge-${currentRole.toLowerCase()}`}>
-          Current Role: {currentRole}
-        </span>
-      </div>
-
-      <h2>Permission Required for &ldquo;{sectionTitle}&rdquo;</h2>
-      <p className="restricted-description">
-        Your current session with the <strong>{roleInfo.name}</strong> role does not have authorization to view or execute actions in this section. Higher operational clearance is required.
+      <h2>Access Restricted</h2>
+      <p className="restricted-badge">
+        <FontAwesomeIcon icon={faShieldHalved} />
+        Requires Elevated Security Clearance
       </p>
 
-      <div className="restricted-privilege-box">
-        <div className="privilege-item">
-          <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#06b6d4" }} />
-          <span>Requires <strong>Supervisor</strong> or <strong>Administration</strong> security level.</span>
-        </div>
-      </div>
+      <p className="restricted-desc">
+        You are currently logged in with{" "}
+        <strong style={{ color: currentRoleInfo.color }}>
+          {currentRoleInfo.name} Clearance
+        </strong>
+        . The section <strong>&ldquo;{sectionTitle}&rdquo;</strong> contains confidential factory data and requires password verification for an authorized leadership account.
+      </p>
 
       <div className="restricted-actions">
         <button
-          className="btn-switch-role admin"
-          onClick={() => onSwitchRole("ADMIN")}
+          className="btn-elevate-admin"
+          onClick={() => onRequestElevate("ADMIN")}
         >
           <FontAwesomeIcon icon={faUserShield} />
-          Elevate to Administrator
+          Authenticate as Administrator
         </button>
 
         <button
-          className="btn-switch-role supervisor"
-          onClick={() => onSwitchRole("SUPERVISOR")}
+          className="btn-elevate-supervisor"
+          onClick={() => onRequestElevate("SUPERVISOR")}
         >
           <FontAwesomeIcon icon={faUserTie} />
-          Elevate to Supervisor
+          Authenticate as Supervisor
         </button>
 
         <button
@@ -143,10 +140,13 @@ function AccessRestrictedView({
 }
 
 /* ─── Individual views ─── */
-function DashboardView() {
+function DashboardView({ onNavigate }: { onNavigate: (section: number) => void }) {
   return (
     <>
-      <HeroSection />
+      <HeroSection
+        onOpenDigitalTwin={() => onNavigate(1)}
+        onOpenAiInsights={() => onNavigate(2)}
+      />
       <KpiSection />
       <OverviewSection />
       <ProductionFlow />
@@ -213,27 +213,15 @@ function ReportsView() {
   );
 }
 
-const views = [
-  <DashboardView key="dashboard" />,
-  <DigitalTwinView key="digital-twin" />,
-  <AIAgentView key="ai-agent" />,
-  <MlWorkbenchView key="ml-workbench" />,
-  <MachinesView key="machines" />,
-  <AnalyticsView key="analytics" />,
-  <MaintenanceView key="maintenance" />,
-  <AlertsView key="alerts" />,
-  <ReportsView key="reports" />,
-  <UsersPage key="users" />,
-  <SettingsPage key="settings" />,
-];
-
 export default function DashboardClient() {
   const [activeSection, setActiveSection] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default on entry
   const [chatOpen, setChatOpen] = useState(false);
-  const { role, canAccessSection, switchRole } = useAuth();
+  const [elevateModalOpen, setElevateModalOpen] = useState(false);
+  const [elevateTargetRole, setElevateTargetRole] = useState<UserRole | null>(null);
 
+  const { role, canAccessSection } = useAuth();
 
   useNotifications();
 
@@ -243,17 +231,14 @@ export default function DashboardClient() {
     return () => clearTimeout(t);
   }, []);
 
-  // Handle responsive layout collapsing
+  // Handle responsive layout resizing
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth <= 1024) {
         setSidebarOpen(false);
-      } else {
-        setSidebarOpen(true);
       }
     };
 
-    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -280,10 +265,51 @@ export default function DashboardClient() {
     setActiveSection(index);
   };
 
+  const handleRequestElevate = (targetRole: UserRole) => {
+    setElevateTargetRole(targetRole);
+    setElevateModalOpen(true);
+  };
+
   const hasAccess = canAccessSection(activeSection);
+
+  const renderCurrentView = () => {
+    switch (activeSection) {
+      case 0:
+        return <DashboardView onNavigate={handleSelect} />;
+      case 1:
+        return <DigitalTwinView />;
+      case 2:
+        return <AIAgentView />;
+      case 3:
+        return <MlWorkbenchView />;
+      case 4:
+        return <MachinesView />;
+      case 5:
+        return <AnalyticsView />;
+      case 6:
+        return <MaintenanceView />;
+      case 7:
+        return <AlertsView />;
+      case 8:
+        return <ReportsView />;
+      case 9:
+        return <UsersPage />;
+      case 10:
+        return <SettingsPage />;
+      default:
+        return <DashboardView onNavigate={handleSelect} />;
+    }
+  };
 
   return (
     <>
+      {/* Password verification modal for role elevation */}
+      <AuthModal
+        isOpen={elevateModalOpen}
+        onClose={() => setElevateModalOpen(false)}
+        targetRole={elevateTargetRole}
+      />
+
       {/* White entry overlay */}
       <div
         className={`db-entry-overlay${revealed ? " db-entry-hidden" : ""}`}
@@ -318,12 +344,12 @@ export default function DashboardClient() {
 
           <PageView sectionKey={activeSection}>
             {hasAccess ? (
-              views[activeSection]
+              renderCurrentView()
             ) : (
               <AccessRestrictedView
                 sectionTitle={pageTitles[activeSection]}
                 currentRole={role}
-                onSwitchRole={switchRole}
+                onRequestElevate={handleRequestElevate}
                 onGoHome={() => setActiveSection(0)}
               />
             )}
@@ -359,11 +385,8 @@ export default function DashboardClient() {
           aria-label="Toggle Precaution Assistant"
         >
           <FontAwesomeIcon icon={faRobot} />
-          <span className="fab-pulse-ring" />
         </button>
       </div>
     </>
   );
 }
-
-

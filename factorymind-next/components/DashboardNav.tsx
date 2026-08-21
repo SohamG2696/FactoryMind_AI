@@ -16,6 +16,7 @@ import {
   faRotate,
   faCircleCheck,
   faBars,
+  faKey,
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/navigation";
 
@@ -25,13 +26,13 @@ interface DashboardNavProps {
   setSidebarOpen?: (open: boolean) => void;
 }
 
-
 export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }: DashboardNavProps) {
   const time = useClock();
   const router = useRouter();
-  const { user, role, switchRole, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [modalTargetRole, setModalTargetRole] = useState<UserRole | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentRoleInfo = ROLE_PERMISSIONS[role];
@@ -47,8 +48,15 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleRoleChange = (newRole: UserRole) => {
-    switchRole(newRole);
+  const handleRoleSwitchRequest = (targetRole: UserRole) => {
+    setModalTargetRole(targetRole);
+    setAuthModalOpen(true);
+    setDropdownOpen(false);
+  };
+
+  const handleAccountSwitchRequest = () => {
+    setModalTargetRole(null);
+    setAuthModalOpen(true);
     setDropdownOpen(false);
   };
 
@@ -62,6 +70,7 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
+        targetRole={modalTargetRole}
       />
 
       <nav className="dashboard-nav">
@@ -82,7 +91,6 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
           </div>
         </div>
 
-
         <div className="nav-right">
           <div className="clock">
             <FontAwesomeIcon icon={faClock} /> <span id="clock">{time}</span>
@@ -99,17 +107,17 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={user?.avatar || "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150"}
+                src={user?.avatar || "https://ui-avatars.com/api/?name=Admin&background=1c1917&color=f59e0b&bold=true&rounded=true&size=150"}
                 alt={user?.name || "User avatar"}
               />
               <div>
                 <div className="profile-title-row">
-                  <h3>{user?.name || "Dr. Sarah Chen"}</h3>
+                  <h3>{user?.name || "Plant Personnel"}</h3>
                   <span className={`role-badge-pill role-badge-${role.toLowerCase()}`}>
                     {role}
                   </span>
                 </div>
-                <p>{user?.title || "Factory Manager"}</p>
+                <p>{user?.title || "Factory Staff"}</p>
               </div>
               <FontAwesomeIcon
                 icon={faChevronDown}
@@ -129,43 +137,43 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
                 <div className="dropdown-divider" />
 
                 <div className="dropdown-section-title">
-                  <FontAwesomeIcon icon={faShieldHalved} style={{ marginRight: 6 }} />
-                  Active Security Role
+                  <FontAwesomeIcon icon={faKey} style={{ marginRight: 6 }} />
+                  Switch Clearance (Requires Password)
                 </div>
 
                 <div className="dropdown-role-options">
                   <button
                     className={`dropdown-role-btn ${role === "ADMIN" ? "selected admin" : ""}`}
-                    onClick={() => handleRoleChange("ADMIN")}
+                    onClick={() => handleRoleSwitchRequest("ADMIN")}
                   >
                     <FontAwesomeIcon icon={faUserShield} className="role-icon-amber" />
                     <div className="role-btn-info">
                       <span className="role-btn-title">Administration</span>
-                      <span className="role-btn-desc">Full system, users & ML control</span>
+                      <span className="role-btn-desc">Full governance & ML control</span>
                     </div>
                     {role === "ADMIN" && <FontAwesomeIcon icon={faCircleCheck} className="check-icon" />}
                   </button>
 
                   <button
                     className={`dropdown-role-btn ${role === "SUPERVISOR" ? "selected supervisor" : ""}`}
-                    onClick={() => handleRoleChange("SUPERVISOR")}
+                    onClick={() => handleRoleSwitchRequest("SUPERVISOR")}
                   >
                     <FontAwesomeIcon icon={faUserTie} className="role-icon-cyan" />
                     <div className="role-btn-info">
                       <span className="role-btn-title">Supervisor</span>
-                      <span className="role-btn-desc">Shift oversight & work orders</span>
+                      <span className="role-btn-desc">Shift oversight & maintenance</span>
                     </div>
                     {role === "SUPERVISOR" && <FontAwesomeIcon icon={faCircleCheck} className="check-icon" />}
                   </button>
 
                   <button
                     className={`dropdown-role-btn ${role === "USER" ? "selected user" : ""}`}
-                    onClick={() => handleRoleChange("USER")}
+                    onClick={() => handleRoleSwitchRequest("USER")}
                   >
                     <FontAwesomeIcon icon={faUserGear} className="role-icon-emerald" />
                     <div className="role-btn-info">
                       <span className="role-btn-title">User (Operator)</span>
-                      <span className="role-btn-desc">Floor monitoring & checklist tasks</span>
+                      <span className="role-btn-desc">Floor cell machine telemetry</span>
                     </div>
                     {role === "USER" && <FontAwesomeIcon icon={faCircleCheck} className="check-icon" />}
                   </button>
@@ -174,23 +182,13 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
                 <div className="dropdown-divider" />
 
                 <div className="dropdown-actions">
-                  <button
-                    className="dropdown-action-btn"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      setAuthModalOpen(true);
-                    }}
-                  >
+                  <button className="dropdown-action-btn" onClick={handleAccountSwitchRequest}>
                     <FontAwesomeIcon icon={faRotate} />
-                    Switch User / Login
+                    Switch Identity / Account
                   </button>
-
-                  <button
-                    className="dropdown-action-btn logout"
-                    onClick={handleLogout}
-                  >
+                  <button className="dropdown-action-btn danger" onClick={handleLogout}>
                     <FontAwesomeIcon icon={faRightFromBracket} />
-                    Sign Out
+                    Lock & Exit Session
                   </button>
                 </div>
               </div>
@@ -201,4 +199,3 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
     </>
   );
 }
-
