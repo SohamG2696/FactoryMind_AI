@@ -348,6 +348,22 @@ nav p{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
     gap:25px;
+    align-items:stretch;
+}
+
+/* Make ElectricBorder wrapper fill full height of the grid cell */
+.kpi-section .electric-border {
+    height:100%;
+    box-sizing:border-box;
+}
+
+.kpi-section .electric-border .eb-content {
+    height:100%;
+}
+
+.kpi-section .kpi-card {
+    height:100%;
+    box-sizing:border-box;
 }
 
 .kpi-card{
@@ -476,6 +492,18 @@ nav p{
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:25px;
+    align-items:stretch;
+}
+
+.factory-map .electric-border{
+    height:100%;
+    box-sizing:border-box;
+}
+
+.factory-map .electric-border .eb-content{
+    height:100%;
+    display:flex;
+    flex-direction:column;
 }
 
 .machine-card{
@@ -486,6 +514,11 @@ nav p{
     transition:.35s;
     cursor:pointer;
     position:relative;
+    height:100%;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
 }
 
 .machine-card:hover{
@@ -1520,16 +1553,16 @@ footer{
 }
 
 .lp-content-card {
-    max-width: 490px;
+    max-width: 540px;
     width: 100%;
     pointer-events: auto;
-    background: rgba(10, 10, 10, 0.72);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 22px;
-    padding: 30px 28px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(255, 255, 255, 0.03);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     animation: lp-rise 0.9s cubic-bezier(.22, 1, .36, 1) 0.1s both;
 }
 
@@ -3146,38 +3179,47 @@ footer{
     color: #fff;
 }
 
-/* Auth Modal Backdrop & Card */
-.auth-backdrop {
+/* =====================================================
+      GOOGLE ACCOUNT LOGIN / ENTERPRISE SSO MODAL
+======================================================*/
+
+.google-auth-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 99999;
     padding: 20px;
 }
 
-.auth-card {
+.google-auth-card {
     position: relative;
-    background: #0d0d0d;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 20px;
+    background: #1e1f20;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 28px;
     width: 100%;
-    max-width: 480px;
-    padding: 32px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(56, 189, 248, 0.08);
-    animation: authCardIn 0.25s ease;
+    max-width: 520px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 40px rgba(66, 133, 244, 0.12);
+    animation: googleCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    color: #e3e3e3;
+    font-family: 'Roboto', 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-@keyframes authCardIn {
+@keyframes googleCardIn {
     from {
         opacity: 0;
-        transform: scale(0.95) translateY(10px);
+        transform: scale(0.93) translateY(14px);
     }
     to {
         opacity: 1;
@@ -3185,13 +3227,16 @@ footer{
     }
 }
 
-.auth-close-btn {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
+.google-auth-topbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 20px 0;
+}
+
+.google-close-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #c4c7c5;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -3202,276 +3247,496 @@ footer{
     transition: all 0.2s ease;
 }
 
-.auth-close-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+.google-close-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
     color: #fff;
 }
 
-.auth-header {
+.google-auth-header {
     text-align: center;
-    margin-bottom: 22px;
+    padding: 0 32px 16px;
 }
 
-.auth-logo-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #0284c7, #0369a1);
+.google-logo-wrapper {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
     margin-bottom: 12px;
-    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
 }
 
-.auth-header h2 {
-    font-size: 20px;
-    font-weight: 700;
+.google-auth-title {
+    font-size: 24px;
+    font-weight: 500;
+    color: #f2f2f2;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+}
+
+.google-auth-subtitle {
+    font-size: 14px;
+    color: #c4c7c5;
+    margin: 0;
+}
+
+.google-error-alert {
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    padding: 10px 16px;
+    margin: 0 32px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+/* Role Filter Tabs (Google Material Pills) */
+.google-role-filter-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 28px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.google-tab-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #c4c7c5;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.google-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
     color: #fff;
 }
 
-.auth-header p {
-    font-size: 12px;
-    color: #94a3b8;
-    margin-top: 4px;
+.google-tab-btn.active {
+    background: #004a77;
+    color: #c2e7ff;
+    border-color: #7fcfff;
 }
 
-/* Demo Role Picker inside Modal */
-.demo-roles-container {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 18px;
+.google-tab-btn.admin.active {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fcd34d;
+    border-color: #f59e0b;
 }
 
-.demo-roles-title {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #cbd5e1;
-    margin-bottom: 10px;
+.google-tab-btn.supervisor.active {
+    background: rgba(6, 182, 212, 0.22);
+    color: #67e8f9;
+    border-color: #06b6d4;
 }
 
-.demo-role-grid {
+.google-tab-btn.user.active {
+    background: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
+    border-color: #10b981;
+}
+
+/* Google Account Chooser Scroll List */
+.google-accounts-scroll {
+    max-height: 290px;
+    overflow-y: auto;
+    padding: 0 20px;
     display: flex;
     flex-direction: column;
+    gap: 4px;
+}
+
+.google-account-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.google-account-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+    transform: translateX(2px);
+}
+
+.google-account-row.current-active {
+    background: rgba(66, 133, 244, 0.12);
+    border-color: rgba(66, 133, 244, 0.35);
+}
+
+.google-account-avatar-wrap {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.google-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.google-status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 2px solid #1e1f20;
+}
+
+.google-status-dot.active { background: #10b981; }
+.google-status-dot.idle   { background: #f59e0b; }
+.google-status-dot.offline{ background: #64748b; }
+
+.google-account-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.google-account-name-row {
+    display: flex;
+    align-items: center;
     gap: 8px;
 }
 
-.demo-role-btn {
+.google-account-name {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #e3e3e3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.google-active-badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+
+.google-account-title {
+    font-size: 12px;
+    color: #a8c7fa;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.google-account-email {
+    font-size: 11.5px;
+    color: #8e918f;
+    margin-top: 1px;
+}
+
+.google-account-badge-col {
+    flex-shrink: 0;
+}
+
+.google-role-pill {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+
+.google-role-pill.role-admin {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.google-role-pill.role-supervisor {
+    background: rgba(6, 182, 212, 0.18);
+    color: #22d3ee;
+    border: 1px solid rgba(6, 182, 212, 0.45);
+}
+
+.google-role-pill.role-user {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+/* Use Another Account Row */
+.google-use-another-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 10px;
-    padding: 9px 12px;
+    gap: 14px;
+    padding: 12px 14px;
+    margin: 8px 20px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     cursor: pointer;
-    text-align: left;
-    transition: all 0.2s ease;
-    color: #fff;
+    border-radius: 12px;
+    transition: all 0.18s ease;
 }
 
-.demo-role-btn:hover {
+.google-use-another-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.google-another-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.08);
-    transform: translateX(3px);
-}
-
-.demo-role-btn.role-admin:hover { border-color: rgba(245, 158, 11, 0.5); }
-.demo-role-btn.role-supervisor:hover { border-color: rgba(6, 182, 212, 0.5); }
-.demo-role-btn.role-user:hover { border-color: rgba(16, 185, 129, 0.5); }
-
-.demo-role-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    color: #c4c7c5;
+    font-size: 16px;
 }
 
-.demo-role-btn.role-admin .demo-role-icon { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.demo-role-btn.role-supervisor .demo-role-icon { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
-.demo-role-btn.role-user .demo-role-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-
-.demo-role-text {
-    flex: 1;
+.google-another-text {
     display: flex;
     flex-direction: column;
 }
 
-.demo-role-text strong {
-    font-size: 12px;
-    color: #fff;
+.google-another-text strong {
+    font-size: 13px;
+    color: #e3e3e3;
+    font-weight: 500;
 }
 
-.demo-role-text span {
-    font-size: 10px;
-    color: #94a3b8;
+.google-another-text span {
+    font-size: 11px;
+    color: #8e918f;
 }
 
-.demo-tag {
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-}
-
-.demo-tag.gold { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.demo-tag.cyan { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
-.demo-tag.emerald { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-
-.auth-divider {
+.google-security-footnote {
     display: flex;
     align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    color: #94a3b8;
+    padding: 12px 24px;
     text-align: center;
-    margin: 16px 0;
-    color: #64748b;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
-.auth-divider::before,
-.auth-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.auth-divider span {
-    padding: 0 10px;
-}
-
-/* Auth Form Controls */
-.auth-form {
+/* Password Form Step (Google Style) */
+.google-password-form,
+.google-custom-form {
+    padding: 0 32px 12px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
 }
 
-.auth-error-banner {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #f87171;
-    padding: 8px 12px;
-    border-radius: 8px;
+.google-selected-user-pill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.google-selected-user-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.google-user-pill-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.google-user-pill-meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.google-user-pill-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e3e3e3;
+}
+
+.google-user-pill-email {
+    font-size: 11px;
+    color: #8e918f;
+}
+
+.google-change-account-btn {
+    background: none;
+    border: none;
+    color: #8e918f;
+    cursor: pointer;
     font-size: 12px;
 }
 
-.auth-input-group label {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: #cbd5e1;
-    margin-bottom: 6px;
+/* Google Outlined Input Field */
+.google-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.auth-input-wrapper {
+.google-floating-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #a8c7fa;
+}
+
+.google-input-wrapper {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.auth-icon {
+.google-field-icon {
     position: absolute;
-    left: 12px;
-    color: #64748b;
-    font-size: 13px;
+    left: 14px;
+    color: #8e918f;
+    font-size: 14px;
 }
 
-.auth-input-wrapper input,
-.auth-input-group input[type="text"],
-.auth-input-group input[type="email"],
-.auth-input-group input[type="number"],
-.modal-select {
+.google-input-wrapper input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #141517;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 13px 14px 13px 40px;
     color: #fff;
-    padding: 10px 12px;
-    border-radius: 8px;
-    font-size: 13px;
+    font-size: 14px;
     outline: none;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
-.auth-input-wrapper input {
-    padding-left: 36px;
+.google-input-wrapper input:focus {
+    border-color: #a8c7fa;
+    box-shadow: 0 0 0 2px rgba(168, 199, 250, 0.25);
+    background: #191b1f;
 }
 
-.auth-input-wrapper input:focus,
-.auth-input-group input:focus,
-.modal-select:focus {
-    border-color: #38bdf8;
-    box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
-}
-
-.role-radio-group {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.role-radio-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 8px 6px;
+.google-form-hint {
     font-size: 11px;
-    font-weight: 600;
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
+    color: #8e918f;
+    line-height: 1.4;
 }
 
-.role-radio-label input {
-    display: none;
-}
-
-.role-radio-label.active {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: #fff;
-    color: #fff;
-}
-
-.auth-submit-btn {
+.google-restriction-notice {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: #fff;
-    color: #050505;
-    border: none;
+    gap: 10px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
     padding: 12px;
-    border-radius: 10px;
+    color: #fde68a;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.google-restriction-notice strong {
+    display: block;
+    color: #fbbf24;
+    margin-bottom: 2px;
+}
+
+.google-restriction-notice p {
+    margin: 0;
+    color: #fef08a;
+}
+
+/* Action Buttons (Google Material Rounded Buttons) */
+.google-auth-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+}
+
+.google-btn-text {
+    background: none;
+    border: none;
+    color: #a8c7fa;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
-    margin-top: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
     transition: all 0.2s ease;
 }
 
-.auth-submit-btn:hover {
-    background: #e2e8f0;
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+.google-btn-text:hover {
+    background: rgba(168, 199, 250, 0.12);
+    color: #d3e3fd;
+}
+
+.google-btn-primary {
+    background: #a8c7fa;
+    color: #062e6f;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.google-btn-primary:hover {
+    background: #d3e3fd;
+    box-shadow: 0 4px 14px rgba(168, 199, 250, 0.4);
     transform: translateY(-1px);
 }
 
-.auth-footer-info {
-    text-align: center;
-    font-size: 11px;
-    color: #64748b;
-    margin-top: 16px;
+.google-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Google Bottom Bar */
+.google-auth-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 11.5px;
+    color: #8e918f;
+}
+
+.google-auth-bottom-links {
+    display: flex;
+    gap: 16px;
+}
+
+.google-auth-bottom-links span {
+    cursor: pointer;
+}
+
+.google-auth-bottom-links span:hover {
+    color: #c4c7c5;
+}
+
+.google-auth-secured {
+    display: flex;
+    align-items: center;
 }
 
 /* Enhanced Users Management Page */

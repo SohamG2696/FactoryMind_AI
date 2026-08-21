@@ -9,11 +9,10 @@ import {
   faUserTie,
   faUserGear,
   faTrash,
-  faCheck,
   faXmark,
   faShieldHalved,
   faCircleCheck,
-  faClock,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function UsersPage() {
@@ -21,7 +20,6 @@ export default function UsersPage() {
     usersList,
     role: currentRole,
     addUser,
-    updateUserRole,
     toggleUserStatus,
     deleteUser,
   } = useAuth();
@@ -30,10 +28,10 @@ export default function UsersPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newDepartment, setNewDepartment] = useState("Plant Operations");
-  const [newRole, setNewRole] = useState<UserRole>("USER");
+  const [newTitle, setNewTitle] = useState("Floor Machine Operator");
   const [newMachines, setNewMachines] = useState(4);
   const [filterRole, setFilterRole] = useState<"ALL" | UserRole>("ALL");
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   const isAdmin = currentRole === "ADMIN";
 
@@ -44,13 +42,8 @@ export default function UsersPage() {
     addUser({
       name: newName,
       email: newEmail,
-      role: newRole,
-      title:
-        newRole === "ADMIN"
-          ? "System Administrator"
-          : newRole === "SUPERVISOR"
-          ? "Floor Supervisor"
-          : "Machine Operator",
+      role: "USER",
+      title: newTitle || "Machine Operator",
       department: newDepartment,
       avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${newEmail}`,
       status: "Active",
@@ -60,6 +53,16 @@ export default function UsersPage() {
     setNewName("");
     setNewEmail("");
     setIsAddModalOpen(false);
+    setMessage(`New operator account "${newName}" created successfully.`);
+    setTimeout(() => setMessage(null), 4000);
+  };
+
+  const handleDelete = (u: UserAccount) => {
+    if (u.fixedClearance) {
+      alert(`Cannot delete ${u.name}. This is one of the 4 pre-assigned ${u.role === "ADMIN" ? "Administrator" : "Supervisor"} positions.`);
+      return;
+    }
+    deleteUser(u.id);
   };
 
   const filteredUsers = usersList.filter((u) => {
@@ -80,8 +83,8 @@ export default function UsersPage() {
             <FontAwesomeIcon icon={faUserShield} />
           </div>
           <div>
-            <div className="stat-count">{adminCount}</div>
-            <div className="stat-label">Administrators</div>
+            <div className="stat-count">{adminCount} / 4</div>
+            <div className="stat-label">Administrators (Fixed)</div>
           </div>
         </div>
 
@@ -90,8 +93,8 @@ export default function UsersPage() {
             <FontAwesomeIcon icon={faUserTie} />
           </div>
           <div>
-            <div className="stat-count">{superCount}</div>
-            <div className="stat-label">Shift Supervisors</div>
+            <div className="stat-count">{superCount} / 4</div>
+            <div className="stat-label">Shift Supervisors (Fixed)</div>
           </div>
         </div>
 
@@ -101,164 +104,150 @@ export default function UsersPage() {
           </div>
           <div>
             <div className="stat-count">{userCount}</div>
-            <div className="stat-label">Operators & Techs</div>
+            <div className="stat-label">Active Operators</div>
           </div>
         </div>
       </div>
 
-      {/* Permission Notice for non-admins */}
-      {!isAdmin && (
-        <div className="role-notice-banner supervisor-banner">
-          <FontAwesomeIcon icon={faShieldHalved} />
-          <span>
-            <strong>Read-Only Mode:</strong> You are viewing the operational team roster as <strong>{currentRole}</strong>. Role promotions and user additions require Administrator credentials.
-          </span>
+      {message && (
+        <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.4)", color: "#6ee7b7", padding: "10px 16px", borderRadius: 12, marginBottom: 16 }}>
+          <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
+          {message}
         </div>
       )}
 
-      {/* Main Table Card */}
-      <section className="maintenance-section" style={{ marginTop: 0 }}>
-        <div className="maintenance-card">
-          <div className="users-header-row">
-            <div>
-              <h2>👤 Identity & Role-Based Access Control</h2>
-              <p className="users-subtext">Manage accounts, security clearances, and machine assignments.</p>
-            </div>
-
-            <div className="users-actions-bar">
-              {/* Filter Tabs */}
-              <div className="role-filter-pills">
-                <button
-                  className={`filter-pill ${filterRole === "ALL" ? "active" : ""}`}
-                  onClick={() => setFilterRole("ALL")}
-                >
-                  All ({usersList.length})
-                </button>
-                <button
-                  className={`filter-pill admin ${filterRole === "ADMIN" ? "active" : ""}`}
-                  onClick={() => setFilterRole("ADMIN")}
-                >
-                  Admin ({adminCount})
-                </button>
-                <button
-                  className={`filter-pill supervisor ${filterRole === "SUPERVISOR" ? "active" : ""}`}
-                  onClick={() => setFilterRole("SUPERVISOR")}
-                >
-                  Supervisor ({superCount})
-                </button>
-                <button
-                  className={`filter-pill user ${filterRole === "USER" ? "active" : ""}`}
-                  onClick={() => setFilterRole("USER")}
-                >
-                  Operators ({userCount})
-                </button>
-              </div>
-
-              {isAdmin && (
-                <button
-                  className="btn-add-user"
-                  onClick={() => setIsAddModalOpen(true)}
-                >
-                  <FontAwesomeIcon icon={faUserPlus} />
-                  Add User
-                </button>
-              )}
-            </div>
+      {/* Main Table Section */}
+      <section className="users-table-card">
+        <div className="table-header-row">
+          <div>
+            <h2>Plant Personnel & Security Clearance</h2>
+            <p>Access control, shift allocations, and active machine monitoring assignments</p>
           </div>
 
+          {isAdmin && (
+            <button className="btn-add-user" onClick={() => setIsAddModalOpen(true)}>
+              <FontAwesomeIcon icon={faUserPlus} />
+              Add Operator
+            </button>
+          )}
+        </div>
+
+        {/* Filter Bar */}
+        <div className="users-filter-bar">
+          <button
+            className={`filter-btn ${filterRole === "ALL" ? "active" : ""}`}
+            onClick={() => setFilterRole("ALL")}
+          >
+            All Accounts ({usersList.length})
+          </button>
+          <button
+            className={`filter-btn admin ${filterRole === "ADMIN" ? "active" : ""}`}
+            onClick={() => setFilterRole("ADMIN")}
+          >
+            👑 Administrators (4)
+          </button>
+          <button
+            className={`filter-btn supervisor ${filterRole === "SUPERVISOR" ? "active" : ""}`}
+            onClick={() => setFilterRole("SUPERVISOR")}
+          >
+            🛡 Supervisors (4)
+          </button>
+          <button
+            className={`filter-btn user ${filterRole === "USER" ? "active" : ""}`}
+            onClick={() => setFilterRole("USER")}
+          >
+            👤 Operators ({userCount})
+          </button>
+        </div>
+
+        {/* Users Table */}
+        <div className="users-table-wrapper">
           <table className="users-table">
             <thead>
               <tr>
                 <th>User / Identity</th>
-                <th>Security Role</th>
+                <th>Assigned Position</th>
+                <th>Role Clearance</th>
                 <th>Department</th>
-                <th>Machines</th>
                 <th>Status</th>
-                <th>Last Active</th>
-                {isAdmin && <th>Role Actions</th>}
+                <th>Machines</th>
+                {isAdmin && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map((u) => (
                 <tr key={u.id}>
+                  {/* User Column */}
                   <td>
                     <div className="user-identity-cell">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={u.avatar}
-                        alt={u.name}
-                        className="user-table-avatar"
-                      />
+                      <img src={u.avatar} alt={u.name} className="user-table-avatar" />
                       <div>
-                        <strong>{u.name}</strong>
-                        <span>{u.email}</span>
+                        <div className="user-table-name">
+                          {u.name}
+                          {u.fixedClearance && (
+                            <span title="Fixed Plant Leadership Position" style={{ marginLeft: 6, color: "#f59e0b", fontSize: 11 }}>
+                              <FontAwesomeIcon icon={faLock} />
+                            </span>
+                          )}
+                        </div>
+                        <div className="user-table-email">{u.email}</div>
                       </div>
                     </div>
                   </td>
 
+                  {/* Title / Position */}
                   <td>
-                    {editingUserId === u.id && isAdmin ? (
-                      <select
-                        className="role-select-inline"
-                        value={u.role}
-                        onChange={(e) => {
-                          updateUserRole(u.id, e.target.value as UserRole);
-                          setEditingUserId(null);
-                        }}
-                      >
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="SUPERVISOR">SUPERVISOR</option>
-                        <option value="USER">USER</option>
-                      </select>
-                    ) : (
-                      <span className={`role-badge-pill role-badge-${u.role.toLowerCase()}`}>
-                        {u.role}
-                      </span>
-                    )}
+                    <span style={{ fontWeight: 500, color: "#cbd5e1", fontSize: 13 }}>{u.title}</span>
                   </td>
 
-                  <td>{u.department}</td>
+                  {/* Role Column */}
                   <td>
-                    <strong>{u.machinesManaged || 0}</strong> units
+                    <span className={`role-badge-pill role-badge-${u.role.toLowerCase()}`}>
+                      {u.role === "ADMIN" ? "ADMINISTRATOR" : u.role === "SUPERVISOR" ? "SUPERVISOR" : "OPERATOR"}
+                    </span>
                   </td>
 
+                  {/* Department */}
+                  <td>
+                    <span className="user-dept-text">{u.department}</span>
+                  </td>
+
+                  {/* Status Toggle */}
                   <td>
                     <button
-                      className={`status-pill ${u.status === "Active" ? "active" : "idle"}`}
-                      onClick={() => isAdmin && toggleUserStatus(u.id)}
-                      disabled={!isAdmin}
-                      title={isAdmin ? "Click to toggle status" : undefined}
+                      className={`status-toggle-btn status-${u.status.toLowerCase()}`}
+                      onClick={() => toggleUserStatus(u.id)}
+                      title="Click to toggle status"
                     >
-                      <span className="status-dot" />
+                      <span className="status-dot-inner" />
                       {u.status}
                     </button>
                   </td>
 
+                  {/* Machines Managed */}
                   <td>
-                    <span className="last-active-text">
-                      <FontAwesomeIcon icon={faClock} style={{ marginRight: 4, opacity: 0.6 }} />
-                      {u.lastActive || "Recently"}
-                    </span>
+                    <span className="user-machines-tag">{u.machinesManaged || 0} Units</span>
                   </td>
 
+                  {/* Actions (Admin Only) */}
                   {isAdmin && (
                     <td>
-                      <div className="table-actions-group">
-                        <button
-                          className="btn-edit-role"
-                          onClick={() => setEditingUserId(editingUserId === u.id ? null : u.id)}
-                          title="Change Role"
-                        >
-                          {editingUserId === u.id ? "Done" : "Change Role"}
-                        </button>
-
-                        <button
-                          className="btn-delete-user"
-                          onClick={() => deleteUser(u.id)}
-                          title="Delete User"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
+                      <div className="user-actions-cell">
+                        {u.fixedClearance ? (
+                          <span style={{ fontSize: 11, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#f59e0b" }} />
+                            Fixed Slot
+                          </span>
+                        ) : (
+                          <button
+                            className="btn-delete-user"
+                            onClick={() => handleDelete(u)}
+                            title="Delete User"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -271,108 +260,83 @@ export default function UsersPage() {
 
       {/* Add User Modal */}
       {isAddModalOpen && (
-        <div className="auth-backdrop" onClick={() => setIsAddModalOpen(false)}>
-          <div className="auth-card" onClick={(e) => e.stopPropagation()}>
-            <button className="auth-close-btn" onClick={() => setIsAddModalOpen(false)}>
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-
-            <div className="auth-header">
-              <h2>Add New FactoryMind Account</h2>
-              <p>Assign security roles and floor machine allocations</p>
+        <div className="google-auth-backdrop" onClick={() => setIsAddModalOpen(false)}>
+          <div className="google-auth-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="google-auth-topbar">
+              <button className="google-close-btn" onClick={() => setIsAddModalOpen(false)}>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
             </div>
 
-            <form onSubmit={handleAddSubmit} className="auth-form">
-              <div className="auth-input-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Rachel Adams"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="google-auth-header">
+              <h2 className="google-auth-title">Add Factory Operator</h2>
+              <p className="google-auth-subtitle">Assign floor operators to assembly & machining cells</p>
+            </div>
 
-              <div className="auth-input-group">
-                <label>Enterprise Email</label>
-                <input
-                  type="email"
-                  placeholder="rachel.adams@factorymind.ai"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="auth-input-group">
-                <label>Department</label>
-                <select
-                  value={newDepartment}
-                  onChange={(e) => setNewDepartment(e.target.value)}
-                  className="modal-select"
-                >
-                  <option value="Plant Operations">Plant Operations</option>
-                  <option value="Preventive Maintenance">Preventive Maintenance</option>
-                  <option value="Precision Machining">Precision Machining</option>
-                  <option value="Quality Assurance">Quality Assurance</option>
-                  <option value="Executive & AI Systems">Executive & AI Systems</option>
-                </select>
-              </div>
-
-              <div className="auth-input-group">
-                <label>Access Security Role</label>
-                <div className="role-radio-group">
-                  <label className={`role-radio-label ${newRole === "ADMIN" ? "active" : ""}`}>
-                    <input
-                      type="radio"
-                      name="newUserRole"
-                      value="ADMIN"
-                      checked={newRole === "ADMIN"}
-                      onChange={() => setNewRole("ADMIN")}
-                    />
-                    <span>Administrator</span>
-                  </label>
-
-                  <label className={`role-radio-label ${newRole === "SUPERVISOR" ? "active" : ""}`}>
-                    <input
-                      type="radio"
-                      name="newUserRole"
-                      value="SUPERVISOR"
-                      checked={newRole === "SUPERVISOR"}
-                      onChange={() => setNewRole("SUPERVISOR")}
-                    />
-                    <span>Supervisor</span>
-                  </label>
-
-                  <label className={`role-radio-label ${newRole === "USER" ? "active" : ""}`}>
-                    <input
-                      type="radio"
-                      name="newUserRole"
-                      value="USER"
-                      checked={newRole === "USER"}
-                      onChange={() => setNewRole("USER")}
-                    />
-                    <span>User (Operator)</span>
-                  </label>
+            <form onSubmit={handleAddSubmit} style={{ padding: "0 28px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="google-input-container">
+                <label className="google-floating-label">Full Name</label>
+                <div className="google-input-wrapper">
+                  <input
+                    type="text"
+                    placeholder="e.g. David Zhao"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="auth-input-group">
-                <label>Machines Managed</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="26"
-                  value={newMachines}
-                  onChange={(e) => setNewMachines(Number(e.target.value))}
-                />
+              <div className="google-input-container">
+                <label className="google-floating-label">Enterprise Email</label>
+                <div className="google-input-wrapper">
+                  <input
+                    type="email"
+                    placeholder="david.zhao@factorymind.ai"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
-              <button type="submit" className="auth-submit-btn">
-                <FontAwesomeIcon icon={faCircleCheck} />
-                Create Account & Grant Role
-              </button>
+              <div className="google-input-container">
+                <label className="google-floating-label">Operator Title</label>
+                <div className="google-input-wrapper">
+                  <input
+                    type="text"
+                    placeholder="e.g. CNC Workcell Lead"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="google-input-container">
+                <label className="google-floating-label">Department</label>
+                <div className="google-input-wrapper">
+                  <input
+                    type="text"
+                    placeholder="e.g. Precision Machining"
+                    value={newDepartment}
+                    onChange={(e) => setNewDepartment(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="google-restriction-notice" style={{ margin: "4px 0" }}>
+                <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#f59e0b" }} />
+                <span>Administrator and Supervisor positions are limited to the 4 pre-assigned leadership slots.</span>
+              </div>
+
+              <div className="google-auth-actions-row">
+                <button type="button" className="google-btn-text" onClick={() => setIsAddModalOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="google-btn-primary">
+                  Create Operator
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -380,4 +344,3 @@ export default function UsersPage() {
     </div>
   );
 }
-

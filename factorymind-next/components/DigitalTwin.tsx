@@ -10,6 +10,21 @@ import {
   faCompress,
   faWarehouse,
 } from "@fortawesome/free-solid-svg-icons";
+import ElectricBorder from "./ElectricBorder";
+
+const STATUS_COLORS: Record<string, string> = {
+  green: "#22C55E",
+  yellow: "#FACC15",
+  red: "#EF4444",
+  blue: "#3B82F6",
+};
+
+const STATUS_CHAOS: Record<string, number> = {
+  green: 0.10,
+  yellow: 0.10,
+  red: 0.11,
+  blue: 0.10,
+};
 
 export default function DigitalTwin() {
   const sensor = useSensorData();
@@ -43,29 +58,36 @@ export default function DigitalTwin() {
         </div>
         <div className="factory-map">
           {machines.map((m, idx) => (
-            <div
+            <ElectricBorder
               key={m.id}
-              id={m.id}
-              className={`machine-card ${m.cls}`}
-              style={{
-                boxShadow: highlighted === idx ? "0 0 25px cyan" : undefined,
-              }}
+              color={STATUS_COLORS[m.status]}
+              speed={highlighted === idx ? 1.4 : 0.9}
+              chaos={highlighted === idx ? 0.12 : STATUS_CHAOS[m.status]}
+              borderRadius={18}
             >
-              <div className="machine-header">
-                <span>{m.label}</span>
-                <span className={`status-dot ${m.status}`} />
+              <div
+                id={m.id}
+                className={`machine-card ${m.cls}`}
+                style={{
+                  boxShadow: highlighted === idx ? `0 0 25px ${STATUS_COLORS[m.status]}55` : undefined,
+                }}
+              >
+                <div className="machine-header">
+                  <span>{m.label}</span>
+                  <span className={`status-dot ${m.status}`} />
+                </div>
+                <div className="machine-icon">
+                  <FontAwesomeIcon icon={m.icon} />
+                </div>
+                <div className="machine-info">
+                  {m.info.map(([key, val]) => (
+                    <p key={key}>
+                      {key} : <span>{val}</span>
+                    </p>
+                  ))}
+                </div>
               </div>
-              <div className="machine-icon">
-                <FontAwesomeIcon icon={m.icon} />
-              </div>
-              <div className="machine-info">
-                {m.info.map(([key, val]) => (
-                  <p key={key}>
-                    {key} : <span>{val}</span>
-                  </p>
-                ))}
-              </div>
-            </div>
+            </ElectricBorder>
           ))}
         </div>
       </div>
@@ -111,3 +133,4 @@ export default function DigitalTwin() {
     </section>
   );
 }
+
