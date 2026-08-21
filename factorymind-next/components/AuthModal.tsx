@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth, UserAccount, UserRole } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -22,9 +22,15 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  preSelectedUser?: UserAccount | null;
 }
 
-export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
+export default function AuthModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  preSelectedUser = null,
+}: AuthModalProps) {
   const {
     login,
     selectUserAccount,
@@ -36,12 +42,28 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"ALL" | "ADMIN" | "SUPERVISOR" | "USER">("ALL");
-  const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserAccount | null>(preSelectedUser || activeUser || null);
   const [password, setPassword] = useState("");
   const [customEmail, setCustomEmail] = useState("");
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Sync selected user when modal opens with a pre-selected user
+  useEffect(() => {
+    if (isOpen) {
+      if (preSelectedUser) {
+        setSelectedUser(preSelectedUser);
+      } else if (activeUser) {
+        setSelectedUser(activeUser);
+      } else {
+        setSelectedUser(null);
+      }
+      setPassword("");
+      setError("");
+      setIsCustomMode(false);
+    }
+  }, [isOpen, preSelectedUser, activeUser]);
 
   if (!isOpen) return null;
 
@@ -56,7 +78,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setError("");
 
     if (!selectedUser && !customEmail) {
-      setError("Please select an authorized account or enter your email.");
+      setError("Please select an authorized account or enter your work email.");
+      return;
+    }
+
+    if (!password || password.trim().length === 0) {
+      setError("Please enter the security password for this account.");
       return;
     }
 
@@ -105,7 +132,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
         {/* Google-style Header */}
         <div className="google-auth-header">
-          {/* Google 4-Color G Emblem + Factory Logo */}
+          {/* Google 4-Color G Emblem */}
           <div className="google-logo-wrapper">
             <svg className="google-g-logo" viewBox="0 0 24 24" width="36" height="36">
               <path
@@ -146,7 +173,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 className={`google-tab-btn ${activeTab === "ALL" ? "active" : ""}`}
                 onClick={() => setActiveTab("ALL")}
               >
-                All Accounts ({usersList.length})
+                All ({usersList.length})
               </button>
               <button
                 className={`google-tab-btn admin ${activeTab === "ADMIN" ? "active" : ""}`}
@@ -187,7 +214,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     <div className="google-account-info">
                       <div className="google-account-name-row">
                         <span className="google-account-name">{account.name}</span>
-                        {isCurrent && <span className="google-active-badge">Active Session</span>}
+                        {isCurrent && <span className="google-active-badge">Active</span>}
                       </div>
                       <div className="google-account-title">{account.title}</div>
                       <div className="google-account-email">{account.email}</div>
@@ -210,14 +237,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               </div>
               <div className="google-another-text">
                 <strong>Sign in with custom work email</strong>
-                <span>New users will be registered with Operator clearance</span>
+                <span>New personnel are registered with Operator clearance</span>
               </div>
             </div>
 
             {/* Enterprise Clearance Footnote */}
             <div className="google-security-footnote">
               <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#10b981", marginRight: 6 }} />
-              <span>Plant RBAC: 4 Administrator and 4 Supervisor slots are pre-assigned & fixed.</span>
+              <span>Plant RBAC: 4 Administrator and 4 Supervisor slots are pre-assigned & locked.</span>
             </div>
           </div>
         )}
@@ -242,7 +269,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             </div>
 
             <div className="google-input-container">
-              <label className="google-floating-label">Enter Password</label>
+              <label className="google-floating-label">Account Security Password</label>
               <div className="google-input-wrapper">
                 <FontAwesomeIcon icon={faKey} className="google-field-icon" />
                 <input
@@ -255,7 +282,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 />
               </div>
               <div className="google-form-hint">
-                <span>Enterprise SSO Mode: Demo credentials auto-verified for plant personnel.</span>
+                <span>Enter password to authenticate and launch the Digital Twin dashboard.</span>
               </div>
             </div>
 
@@ -266,7 +293,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 onClick={() => setSelectedUser(null)}
               >
                 <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />
-                All Accounts
+                Switch Account
               </button>
 
               <button
@@ -275,7 +302,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 disabled={loading}
               >
                 <FontAwesomeIcon icon={faRightToBracket} style={{ marginRight: 8 }} />
-                {loading ? "Authenticating..." : `Sign in as ${selectedUser.name.split(" ")[0]}`}
+                {loading ? "Authenticating..." : "Login to Dashboard"}
               </button>
             </div>
           </form>
@@ -318,7 +345,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               <div>
                 <strong>Notice for Executive & Supervisor access:</strong>
                 <p>
-                  Only the 4 pre-assigned Administrators and 4 Supervisors can access elevated controls. Custom registrations are automatically provisioned with Operator clearance.
+                  Only the 4 pre-assigned Administrators and 4 Supervisors can access elevated controls. Custom registrations are provisioned with Operator clearance.
                 </p>
               </div>
             </div>

@@ -2,44 +2,41 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, UserRole, ROLE_PERMISSIONS } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import AuthModal from "@/components/AuthModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUserShield,
-  faUserTie,
-  faUserGear,
   faRightToBracket,
   faArrowRight,
-  faShieldHalved,
-  faLock,
+  faCircleUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function LandingPage() {
   const [transitioning, setTransitioning] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<UserRole>("ADMIN");
   const router = useRouter();
-  const { user, quickLoginAsRole, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
-  const handleEnterDashboard = (roleToUse?: UserRole) => {
+  const handleEnterDashboard = () => {
     if (transitioning) return;
-    const targetRole = roleToUse || selectedRole;
-    quickLoginAsRole(targetRole);
     setTransitioning(true);
     setTimeout(() => {
       router.push("/dashboard");
     }, 1100);
   };
 
-  const currentRoleConfig = ROLE_PERMISSIONS[selectedRole];
+  const handleLoginCtaClick = () => {
+    // Always open auth modal with password challenge before proceeding
+    setAuthModalOpen(true);
+  };
 
   return (
     <>
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
-        onSuccess={() => handleEnterDashboard()}
+        onSuccess={handleEnterDashboard}
+        preSelectedUser={user || null}
       />
 
       {/* Door grow overlay — expands to fill screen */}
@@ -107,7 +104,7 @@ export default function LandingPage() {
               <div
                 className="lp-user-pill"
                 onClick={() => setAuthModalOpen(true)}
-                title="Active Google/Enterprise Account — click to switch"
+                title="Selected Account — click to change or verify password"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={user.avatar} alt={user.name} className="lp-user-avatar" />
@@ -120,7 +117,7 @@ export default function LandingPage() {
               </div>
             ) : null}
 
-            {/* Google Single Sign-On Button */}
+            {/* Google Single Sign-On / Select Account Button */}
             <button
               className="lp-signin-btn"
               onClick={() => setAuthModalOpen(true)}
@@ -144,17 +141,17 @@ export default function LandingPage() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                 />
               </svg>
-              <span>{isAuthenticated ? "Switch Account" : "Sign In with Google SSO"}</span>
+              <span>{isAuthenticated && user ? "Switch Account" : "Select Account / SSO"}</span>
             </button>
           </div>
         </header>
 
-        {/* Hero Section (Clean Left Text on Direct Background) */}
+        {/* Hero Section (Clean text on natural background) */}
         <main className="lp-hero">
           <div className="lp-content-card">
             <div className="lp-eyebrow">
               <span className="lp-dot" />
-              <span>INDUSTRY 4.0 &nbsp;·&nbsp; DIGITAL TWIN &nbsp;·&nbsp; RESTRICTED RBAC</span>
+              <span>INDUSTRY 4.0 &nbsp;·&nbsp; DIGITAL TWIN &nbsp;·&nbsp; SECURE RBAC</span>
             </div>
 
             <h1 className="lp-title">
@@ -165,61 +162,15 @@ export default function LandingPage() {
               Real-time digital twin monitoring and autonomous predictive AI with strict role clearance for <strong>4 Executive Administrators</strong>, <strong>4 Shift Supervisors</strong>, and factory <strong>Operators</strong>.
             </p>
 
-            {/* Interactive 3-Role Fast-Track Selector */}
-            <div className="lp-role-section">
-              <div className="lp-role-section-header">
-                <FontAwesomeIcon icon={faShieldHalved} style={{ color: currentRoleConfig.color, fontSize: 13 }} />
-                <span>Select Access Clearance:</span>
-              </div>
-
-              <div className="lp-role-tabs">
-                <button
-                  type="button"
-                  className={`lp-role-tab admin ${selectedRole === "ADMIN" ? "active" : ""}`}
-                  onClick={() => setSelectedRole("ADMIN")}
-                >
-                  <FontAwesomeIcon icon={faUserShield} className="role-tab-icon" />
-                  <div className="role-tab-meta">
-                    <strong>Administration</strong>
-                    <span>4 Fixed Positions</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={`lp-role-tab supervisor ${selectedRole === "SUPERVISOR" ? "active" : ""}`}
-                  onClick={() => setSelectedRole("SUPERVISOR")}
-                >
-                  <FontAwesomeIcon icon={faUserTie} className="role-tab-icon" />
-                  <div className="role-tab-meta">
-                    <strong>Supervisor</strong>
-                    <span>4 Fixed Positions</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={`lp-role-tab user ${selectedRole === "USER" ? "active" : ""}`}
-                  onClick={() => setSelectedRole("USER")}
-                >
-                  <FontAwesomeIcon icon={faUserGear} className="role-tab-icon" />
-                  <div className="role-tab-meta">
-                    <strong>Operator</strong>
-                    <span>Floor Telemetry</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
             {/* Launch CTA */}
-            <div className="lp-actions">
+            <div className="lp-actions" style={{ marginTop: 24 }}>
               <button
                 className="lp-cta"
-                onClick={() => handleEnterDashboard(selectedRole)}
+                onClick={handleLoginCtaClick}
                 disabled={transitioning}
                 id="enter-dashboard-btn"
               >
-                <span>Launch Dashboard as {currentRoleConfig.name}</span>
+                <span>Login To Digital Twin</span>
                 <FontAwesomeIcon icon={faArrowRight} className="lp-cta-arrow" />
               </button>
 
