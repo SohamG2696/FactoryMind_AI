@@ -134,14 +134,15 @@ const ElectricBorder = ({
     if (!ctx) return;
 
     const PAD = 8;
-    // Tight displacement amplitude for a thin, crisp lightning line
-    const AMP = chaos * 20 + 2.8;
+    const AMP = chaos * 16 + 2.5;
+    let isVisible = true;
+    let lastFrameTime = 0;
 
     const updateSize = () => {
       const rect = container.getBoundingClientRect();
       const W = rect.width + PAD * 2;
       const H = rect.height + PAD * 2;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.ceil(W * dpr);
       canvas.height = Math.ceil(H * dpr);
       canvas.style.width = W + "px";
@@ -151,14 +152,26 @@ const ElectricBorder = ({
     };
 
     let dims = updateSize();
-    let lastDpr = Math.min(window.devicePixelRatio || 1, 2);
+    let lastDpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
     // Initial strike
     lightningPathRef.current = buildFullLightningStrike(dims.W, dims.H, PAD, borderRadius, AMP);
     lastStrikeTimeRef.current = performance.now();
 
     const draw = (now) => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (!isVisible) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      // Throttle rendering to ~30 FPS for buttery smooth performance across multiple cards
+      if (now - lastFrameTime < 32) {
+        animRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrameTime = now;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       if (dpr !== lastDpr) {
         lastDpr = dpr;
         dims = updateSize();
@@ -166,7 +179,7 @@ const ElectricBorder = ({
       const { W, H } = dims;
 
       // Strike interval (cadence adjusted by speed)
-      const strikeInterval = (65 / Math.max(0.2, speed));
+      const strikeInterval = (75 / Math.max(0.2, speed));
       if (now - lastStrikeTimeRef.current > strikeInterval) {
         lightningPathRef.current = buildFullLightningStrike(W, H, PAD, borderRadius, AMP);
         lastStrikeTimeRef.current = now;
@@ -196,17 +209,17 @@ const ElectricBorder = ({
       ctx.lineJoin = "miter";
       ctx.miterLimit = 3.5;
 
-      // ── Layer 1: Tight, Delicate Neon Corona ──────────────────────────────
+      // Layer 1: Glow
       ctx.strokeStyle = color;
-      ctx.lineWidth = 3.2;
+      ctx.lineWidth = 3.0;
       ctx.globalAlpha = 0.35 * flicker;
       ctx.shadowColor = color;
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 4;
       traceLightning(path);
       ctx.stroke();
 
-      // ── Layer 2: Thin Vivid Neon Lightning Line ───────────────────────────
-      ctx.lineWidth = 1.6;
+      // Layer 2: Neon Core
+      ctx.lineWidth = 1.5;
       ctx.globalAlpha = 0.90 * flicker;
       ctx.shadowColor = color;
       ctx.shadowBlur = 2;
@@ -214,8 +227,8 @@ const ElectricBorder = ({
       traceLightning(path);
       ctx.stroke();
 
-      // ── Layer 3: Razor-Thin White-Hot Sky Strike Spine ───────────────────
-      ctx.lineWidth = 0.8;
+      // Layer 3: White Spine
+      ctx.lineWidth = 0.7;
       ctx.globalAlpha = 1.0 * flicker;
       ctx.shadowColor = "#ffffff";
       ctx.shadowBlur = 1;
@@ -229,6 +242,14 @@ const ElectricBorder = ({
       animRef.current = requestAnimationFrame(draw);
     };
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
+
     const ro = new ResizeObserver(() => {
       dims = updateSize();
       lightningPathRef.current = buildFullLightningStrike(dims.W, dims.H, PAD, borderRadius, AMP);
@@ -238,6 +259,7 @@ const ElectricBorder = ({
 
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
+      observer.disconnect();
       ro.disconnect();
     };
   }, [color, speed, chaos, borderRadius, buildFullLightningStrike]);

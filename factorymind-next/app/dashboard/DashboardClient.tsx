@@ -243,22 +243,7 @@ export default function DashboardClient() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Startup card animation
-  useEffect(() => {
-    const cards = document.querySelectorAll(
-      ".kpi-card,.overview-card,.machine-card,.agent-card,.chart-card,.access-restricted-card"
-    );
-    cards.forEach((card, i) => {
-      const el = card as HTMLElement;
-      el.style.opacity = "0";
-      el.style.transform = "translateY(25px)";
-      setTimeout(() => {
-        el.style.transition = ".6s";
-        el.style.opacity = "1";
-        el.style.transform = "translateY(0)";
-      }, i * 80);
-    });
-  }, [activeSection, role]); // re-run when section or role changes
+
 
   const handleSelect = (index: number) => {
     if (index === activeSection) return;
