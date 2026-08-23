@@ -85,15 +85,37 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
               <FontAwesomeIcon icon={faBars} />
             </button>
           )}
-          <div>
-            <h1>FactoryMind AI</h1>
+          <div className="nav-title-block">
+            <div className="nav-brand-row">
+              <h1>FactoryMind AI</h1>
+              <span className="nav-version-tag">TWIN v2.4</span>
+            </div>
             <p>{pageTitle || "Agentic Digital Twin Platform"}</p>
+          </div>
+        </div>
+
+        {/* Digital Twin Live Ticker Banner */}
+        <div className="nav-twin-ticker">
+          <div className="ticker-item">
+            <span className="ticker-pulse-dot" />
+            <span className="ticker-label">TWIN SYNC:</span>
+            <span className="ticker-val">100% REALTIME</span>
+          </div>
+          <div className="ticker-sep">|</div>
+          <div className="ticker-item hide-mobile">
+            <span className="ticker-label">SCADA:</span>
+            <span className="ticker-val">12ms MQTT</span>
+          </div>
+          <div className="ticker-sep hide-mobile">|</div>
+          <div className="ticker-item hide-mobile">
+            <span className="ticker-label">ACTIVE SENSORS:</span>
+            <span className="ticker-val">318 / 318</span>
           </div>
         </div>
 
         <div className="nav-right">
           <div className="clock">
-            <FontAwesomeIcon icon={faClock} /> <span id="clock">{time}</span>
+            <FontAwesomeIcon icon={faClock} className="clock-icon" /> <span id="clock">{time}</span>
           </div>
 
           {/* User Profile & Role Dropdown */}

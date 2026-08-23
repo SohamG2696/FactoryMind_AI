@@ -25,17 +25,17 @@ import {
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 
 export const navItems = [
-  { icon: faHouse,              label: "Dashboard",       minRole: "USER" },
-  { icon: faMicrochip,          label: "Digital Twin",    minRole: "USER" },
-  { icon: faRobot,              label: "AI Agent",        minRole: "SUPERVISOR" },
-  { icon: faSliders,            label: "ML Workbench",    minRole: "ADMIN" },
-  { icon: faGears,              label: "Machines",        minRole: "USER" },
-  { icon: faChartLine,          label: "Analytics",       minRole: "SUPERVISOR" },
-  { icon: faScrewdriverWrench,  label: "Maintenance",     minRole: "USER" },
-  { icon: faBell,               label: "Alerts",          minRole: "USER" },
-  { icon: faFileLines,          label: "Reports",         minRole: "SUPERVISOR" },
-  { icon: faUser,               label: "Users & Access",  minRole: "ADMIN" },
-  { icon: faGear,               label: "Settings",        minRole: "ADMIN" },
+  { code: "01", icon: faHouse,              label: "Dashboard",       minRole: "USER", tag: "HUD" },
+  { code: "02", icon: faMicrochip,          label: "Digital Twin",    minRole: "USER", tag: "TWIN" },
+  { code: "03", icon: faRobot,              label: "AI Agent",        minRole: "SUPERVISOR", tag: "AGENT" },
+  { code: "04", icon: faSliders,            label: "ML Workbench",    minRole: "ADMIN", tag: "ML" },
+  { code: "05", icon: faGears,              label: "Machines",        minRole: "USER", tag: "CELLS" },
+  { code: "06", icon: faChartLine,          label: "Analytics",       minRole: "SUPERVISOR", tag: "DATA" },
+  { code: "07", icon: faScrewdriverWrench,  label: "Maintenance",     minRole: "USER", tag: "PLAN" },
+  { code: "08", icon: faBell,               label: "Alerts",          minRole: "USER", tag: "SCADA" },
+  { code: "09", icon: faFileLines,          label: "Reports",         minRole: "SUPERVISOR", tag: "DOCS" },
+  { code: "10", icon: faUser,               label: "Users & Access",  minRole: "ADMIN", tag: "RBAC" },
+  { code: "11", icon: faGear,               label: "Settings",        minRole: "ADMIN", tag: "CONF" },
 ];
 
 interface SidebarProps {
@@ -119,11 +119,13 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
                 onClick={() => handleSelect(i)}
                 title={!hasAccess ? `Requires ${item.minRole} password authentication` : item.label}
               >
-                <FontAwesomeIcon icon={item.icon} style={{ width: 20 }} />
+                <span className="sidebar-item-code">{item.code}</span>
+                <FontAwesomeIcon icon={item.icon} className="sidebar-item-icon" />
                 <span className="sidebar-item-label">{item.label}</span>
+                {item.tag && <span className="sidebar-item-tag">{item.tag}</span>}
                 {!hasAccess && (
                   <span className="sidebar-lock-badge" title={`Locked — ${item.minRole} password required`}>
-                    <FontAwesomeIcon icon={faLock} style={{ fontSize: 11 }} />
+                    <FontAwesomeIcon icon={faLock} style={{ fontSize: 10 }} />
                   </span>
                 )}
               </li>
