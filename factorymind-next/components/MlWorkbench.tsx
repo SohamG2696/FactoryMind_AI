@@ -239,8 +239,8 @@ export default function MlWorkbench() {
         <h2>Predictive AI Inference Workbench</h2>
         <p>
           Simulate real-time sensor streams, compute 6 engineered features, and execute end-to-end chained ML inference across{" "}
-          <strong style={{ color: "#38bdf8" }}>best_pm_model.pkl</strong> and{" "}
-          <strong style={{ color: "#a78bfa" }}>factory_model.pkl</strong>.
+          <strong style={{ color: "#A78BFA" }}>best_pm_model.pkl</strong> and{" "}
+          <strong style={{ color: "#C4B5FD" }}>factory_model.pkl</strong>.
         </p>
 
         {/* Quick Presets */}

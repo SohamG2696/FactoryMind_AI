@@ -84,9 +84,11 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
 
       <aside className={`sidebar ${isOpen ? "open" : "collapsed"}`}>
         <div className="logo">
-          <FactoryMindLogo width={32} height={48} id="sidebar_logo" />
-          <h2>FactoryMind AI</h2>
-          <span className="sidebar-sub-badge">Industry 4.0 Suite</span>
+          <FactoryMindLogo width={34} height={34} className="sidebar-brand-logo" />
+          <div className="sidebar-brand-text">
+            <h2>FactoryMind</h2>
+            <span className="sidebar-sub-badge">DIGITAL TWIN AI</span>
+          </div>
 
           {setIsOpen && (
             <button
@@ -174,6 +176,12 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
               </button>
             </div>
           </div>
+        </div>
+
+        {/* System Status Indicator */}
+        <div className="sidebar-system-status">
+          <span className="status-dot-pulse" />
+          <span>System Operational</span>
         </div>
       </aside>
     </>

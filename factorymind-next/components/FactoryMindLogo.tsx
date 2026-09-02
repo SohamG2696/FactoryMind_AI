@@ -1,50 +1,47 @@
 import React from "react";
+import Image from "next/image";
 
 interface FactoryMindLogoProps {
-  width?: number | string;
-  height?: number | string;
+  width?: number;
+  height?: number;
   id?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export default function FactoryMindLogo({
-  width = 28,
-  height = 42,
-  id = "fmlogo",
-  className,
+  width = 34,
+  height = 34,
+  className = "",
+  style = {},
 }: FactoryMindLogoProps) {
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox="0 0 31.5 48.5"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={{ display: "inline-block", verticalAlign: "middle" }}
+    <div
+      className={`factorymind-logo-wrap ${className}`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: typeof width === "number" ? `${width}px` : width,
+        height: typeof height === "number" ? `${height}px` : height,
+        position: "relative",
+        flexShrink: 0,
+        ...style,
+      }}
     >
-      <defs>
-        <linearGradient
-          id={id}
-          x1="8"
-          y1="0"
-          x2="34.1"
-          y2="28.9"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0" stopColor="#9e9e9e" />
-          <stop offset=".28" stopColor="#a6a6a6" />
-          <stop offset=".40" stopColor="#3a3a3a" />
-          <stop offset=".60" stopColor="#7a7a7a" />
-          <stop offset=".80" stopColor="#a9a9a9" />
-          <stop offset="1" stopColor="#cccccc" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M21.5 0 L21.5 19.5 L31.5 19.5 L31.5 29 L10 48.5 L10 28.5 L0.5 28.5 L0.5 18.5 Z"
-        fill={`url(#${id})`}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.png"
+        alt="FactoryMind AI"
+        width={width}
+        height={height}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          filter: "drop-shadow(0 2px 8px rgba(167, 139, 250, 0.25))",
+        }}
       />
-      <rect x="0.5" y="18.5" width="9" height="10" fill="#fdfdfd" />
-      <rect x="22" y="19.5" width="9.5" height="9.5" fill="#fdfdfd" />
-    </svg>
+    </div>
   );
 }

@@ -20,20 +20,19 @@ import {
   faWrench,
   faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
-import ElectricBorder from "./ElectricBorder";
 
 const STATUS_COLORS: Record<string, string> = {
-  green: "#10b981",
-  yellow: "#f59e0b",
-  red: "#ef4444",
-  blue: "#38bdf8",
+  green: "#4ADE80",
+  yellow: "#FACC15",
+  red: "#F87171",
+  blue: "#A78BFA",
 };
 
 const STATUS_CHAOS: Record<string, number> = {
-  green: 0.10,
-  yellow: 0.10,
+  green: 0.08,
+  yellow: 0.08,
   red: 0.12,
-  blue: 0.10,
+  blue: 0.08,
 };
 
 interface MachineData {
@@ -234,7 +233,7 @@ export default function DigitalTwin() {
               <div className="dt-telemetry-grid">
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faTemperatureHalf} style={{ color: "#ef4444" }} />
+                    <FontAwesomeIcon icon={faTemperatureHalf} style={{ color: "#F87171" }} />
                     <span>Operating Temperature</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.temp}</div>
@@ -242,7 +241,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faGaugeHigh} style={{ color: "#38bdf8" }} />
+                    <FontAwesomeIcon icon={faGaugeHigh} style={{ color: "#A78BFA" }} />
                     <span>Spindle / Motor Speed</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.rpm}</div>
@@ -250,7 +249,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faWaveSquare} style={{ color: "#f59e0b" }} />
+                    <FontAwesomeIcon icon={faWaveSquare} style={{ color: "#FACC15" }} />
                     <span>Vibration Amplitude</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.vibration}</div>
@@ -258,7 +257,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faBolt} style={{ color: "#10b981" }} />
+                    <FontAwesomeIcon icon={faBolt} style={{ color: "#4ADE80" }} />
                     <span>Load Utilization</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.load}</div>
@@ -269,7 +268,7 @@ export default function DigitalTwin() {
               <div className="dt-ai-verdict-box">
                 <div className="dt-verdict-header">
                   <div className="dt-vh-title">
-                    <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#38bdf8" }} />
+                    <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#A78BFA" }} />
                     <strong>Digital Twin AI Inference</strong>
                   </div>
                   <span className="dt-verdict-model">{selectedMachine.telemetry.predictiveModel}</span>
@@ -277,12 +276,12 @@ export default function DigitalTwin() {
                 <div className="dt-verdict-content">
                   <div className="dt-verdict-score-row">
                     <span>Machine Health Score:</span>
-                    <strong style={{ color: selectedMachine.telemetry.healthScore > 75 ? "#10b981" : "#ef4444" }}>
+                    <strong style={{ color: selectedMachine.telemetry.healthScore > 75 ? "#4ADE80" : "#F87171" }}>
                       {selectedMachine.telemetry.healthScore}%
                     </strong>
                     <span className="dt-verdict-sep">·</span>
                     <span>Risk:</span>
-                    <strong style={{ color: selectedMachine.status === "red" ? "#ef4444" : selectedMachine.status === "yellow" ? "#f59e0b" : "#10b981" }}>
+                    <strong style={{ color: selectedMachine.status === "red" ? "#F87171" : selectedMachine.status === "yellow" ? "#FACC15" : "#4ADE80" }}>
                       {selectedMachine.telemetry.riskLevel}
                     </strong>
                   </div>
@@ -360,41 +359,34 @@ export default function DigitalTwin() {
 
         <div className="factory-map">
           {filteredMachines.map((m, idx) => (
-            <ElectricBorder
+            <div
               key={m.id}
-              color={STATUS_COLORS[m.status]}
-              speed={highlighted === idx ? 1.4 : 0.8}
-              chaos={highlighted === idx ? 0.12 : STATUS_CHAOS[m.status]}
-              borderRadius={18}
+              id={m.id}
+              className={`machine-card ${m.cls} ${highlighted === idx ? "pulse-active" : ""}`}
+              onClick={() => setSelectedMachine(m)}
+              title="Click to inspect real-time machine telemetry and AI diagnosis"
+              role="button"
+              tabIndex={0}
             >
-              <div
-                id={m.id}
-                className={`machine-card ${m.cls} ${highlighted === idx ? "pulse-active" : ""}`}
-                onClick={() => setSelectedMachine(m)}
-                title="Click to inspect real-time machine telemetry and AI diagnosis"
-                role="button"
-                tabIndex={0}
-              >
-                <div className="machine-header">
-                  <div className="machine-code-badge">{m.code}</div>
-                  <span className="machine-name">{m.label}</span>
-                  <span className={`status-dot ${m.status}`} />
-                </div>
-                <div className="machine-icon">
-                  <FontAwesomeIcon icon={m.icon} />
-                </div>
-                <div className="machine-info">
-                  {m.info.map(([key, val]) => (
-                    <p key={key}>
-                      <span className="info-key">{key}:</span> <span className="info-val">{val}</span>
-                    </p>
-                  ))}
-                </div>
-                <div className="machine-card-footer">
-                  <span className="inspect-hint">Click to Inspect Telemetry →</span>
-                </div>
+              <div className="machine-header">
+                <div className="machine-code-badge">{m.code}</div>
+                <span className="machine-name">{m.label}</span>
+                <span className={`status-dot ${m.status}`} />
               </div>
-            </ElectricBorder>
+              <div className="machine-icon">
+                <FontAwesomeIcon icon={m.icon} />
+              </div>
+              <div className="machine-info">
+                {m.info.map(([key, val]) => (
+                  <p key={key}>
+                    <span className="info-key">{key}:</span> <span className="info-val">{val}</span>
+                  </p>
+                ))}
+              </div>
+              <div className="machine-card-footer">
+                <span className="inspect-hint">Click to Inspect Telemetry →</span>
+              </div>
+            </div>
           ))}
         </div>
       </div>

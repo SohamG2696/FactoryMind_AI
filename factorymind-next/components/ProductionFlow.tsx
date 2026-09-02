@@ -64,7 +64,7 @@ export default function ProductionFlow() {
           </div>
           <div className="flow-stat-pill">
             <span className="pill-label">YIELD:</span>
-            <span className="pill-val" style={{ color: "#10b981" }}>98.4%</span>
+            <span className="pill-val" style={{ color: "#4ADE80" }}>98.4%</span>
           </div>
         </div>
       </div>

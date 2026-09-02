@@ -17,6 +17,7 @@ import {
   faCircleCheck,
   faBars,
   faKey,
+  faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/navigation";
 
@@ -94,7 +95,13 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
           </div>
         </div>
 
-        {/* Digital Twin Live Ticker Banner */}
+        {/* Search & Digital Twin Live Ticker Banner */}
+        <div className="nav-search-box">
+          <FontAwesomeIcon icon={faMagnifyingGlass} style={{ fontSize: 12 }} />
+          <span>Search anything...</span>
+          <kbd>/</kbd>
+        </div>
+
         <div className="nav-twin-ticker">
           <div className="ticker-item">
             <span className="ticker-pulse-dot" />

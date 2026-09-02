@@ -145,7 +145,7 @@ export default function ChatSection() {
       // Warning paragraph card formatting
       if (isWarning) {
         return (
-          <div key={idx} style={{ background: "rgba(239, 68, 68, 0.08)", borderLeft: "3px solid #ef4444", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#fca5a5" }}>
+          <div key={idx} style={{ background: "rgba(248, 113, 113, 0.08)", borderLeft: "3px solid #F87171", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#fca5a5" }}>
             {content}
           </div>
         );
@@ -154,7 +154,7 @@ export default function ChatSection() {
       // Action/Preventive section card formatting
       if (isAction) {
         return (
-          <div key={idx} style={{ background: "rgba(56, 189, 248, 0.08)", borderLeft: "3px solid #38bdf8", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#bae6fd" }}>
+          <div key={idx} style={{ background: "rgba(167, 139, 250, 0.08)", borderLeft: "3px solid #A78BFA", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#C4B5FD" }}>
             {content}
           </div>
         );

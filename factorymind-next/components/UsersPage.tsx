@@ -79,7 +79,7 @@ export default function UsersPage() {
       {/* Role Stats Row */}
       <div className="users-stats-row">
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(250, 204, 21, 0.12)", color: "#FACC15" }}>
             <FontAwesomeIcon icon={faUserShield} />
           </div>
           <div>
@@ -89,7 +89,7 @@ export default function UsersPage() {
         </div>
 
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(6, 182, 212, 0.15)", color: "#06b6d4" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(96, 165, 250, 0.12)", color: "#60A5FA" }}>
             <FontAwesomeIcon icon={faUserTie} />
           </div>
           <div>
@@ -99,7 +99,7 @@ export default function UsersPage() {
         </div>
 
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(74, 222, 128, 0.12)", color: "#4ADE80" }}>
             <FontAwesomeIcon icon={faUserGear} />
           </div>
           <div>
@@ -110,7 +110,7 @@ export default function UsersPage() {
       </div>
 
       {message && (
-        <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.4)", color: "#6ee7b7", padding: "10px 16px", borderRadius: 12, marginBottom: 16 }}>
+        <div style={{ background: "rgba(74, 222, 128, 0.12)", border: "1px solid rgba(74, 222, 128, 0.3)", color: "#86efac", padding: "10px 16px", borderRadius: 12, marginBottom: 16 }}>
           <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
           {message}
         </div>

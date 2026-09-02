@@ -121,7 +121,7 @@ export default function AiSection() {
       <div className="ai-right">
         <div className="prediction-card">
           <h3>Failure Prediction</h3>
-          <h1 id="failurePrediction" style={{ color: failurePrediction > 50 ? "#ef4444" : "#10b981" }}>
+          <h1 id="failurePrediction" style={{ color: failurePrediction > 50 ? "#F87171" : "#4ADE80" }}>
             {failurePrediction}%
           </h1>
           <p>{failurePrediction > 50 ? "High Risk (LightGBM)" : "Low Risk (LightGBM)"}</p>
@@ -135,7 +135,7 @@ export default function AiSection() {
 
         <div className="prediction-card">
           <h3>Health Score</h3>
-          <h1 id="healthScore" style={{ color: healthScore < 70 ? "#f59e0b" : "#10b981" }}>
+          <h1 id="healthScore" style={{ color: healthScore < 70 ? "#FACC15" : "#4ADE80" }}>
             {healthScore}%
           </h1>
           <p>{healthScore < 70 ? "Needs Maintenance" : "Optimal Condition"}</p>

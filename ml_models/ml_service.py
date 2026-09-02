@@ -21,9 +21,17 @@ try:
 except ImportError:
     pass
 
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+try:
+    import uvicorn
+    from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
+    FASTAPI_AVAILABLE = True
+except ImportError:
+    FASTAPI_AVAILABLE = False
+    class HTTPException(Exception):  # type: ignore
+        def __init__(self, status_code: int = 500, detail: str = ""):
+            self.status_code = status_code
+            self.detail = detail
 
 # Define model paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -297,20 +305,27 @@ def run_factory_inference(inp: FactoryStatusInput, pm_score: float) -> Dict[str,
     }
 
 
-# Initialize FastAPI
-app = FastAPI(
-    title="FactoryMind AI - Model Inference Server",
-    version="1.0.0",
-    description="Inference endpoints for LightGBM PM and Random Forest Factory status models"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Initialize FastAPI if available
+if FASTAPI_AVAILABLE:
+    app = FastAPI(
+        title="FactoryMind AI - Model Inference Server",
+        version="1.0.0",
+        description="Inference endpoints for LightGBM PM and Random Forest Factory status models"
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    class DummyApp:
+        def get(self, *args: Any, **kwargs: Any) -> Any:
+            return lambda f: f
+        def post(self, *args: Any, **kwargs: Any) -> Any:
+            return lambda f: f
+    app = DummyApp()  # type: ignore
 
 
 @app.get("/health")

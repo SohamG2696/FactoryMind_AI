@@ -14,17 +14,12 @@ import {
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 
 export default function LandingPage() {
-  const [transitioning, setTransitioning] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
 
   const handleEnterDashboard = () => {
-    if (transitioning) return;
-    setTransitioning(true);
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1100);
+    router.push("/dashboard");
   };
 
   const handleLoginCtaClick = () => {
@@ -41,12 +36,7 @@ export default function LandingPage() {
         preSelectedUser={user || null}
       />
 
-      {/* Door grow overlay — expands to fill screen */}
-      {transitioning && (
-        <div className="door-grow" aria-hidden="true" />
-      )}
-
-      <div className={`landing-stage${transitioning ? " lp-fading" : ""}`}>
+      <div className="landing-stage">
         {/* Video Background */}
         <div className="plate">
           <video
@@ -68,8 +58,11 @@ export default function LandingPage() {
         {/* Top Header with Brand on Left & Auth on Right */}
         <header className="lp-header">
           <div className="lp-brand">
-            <FactoryMindLogo width={26} height={40} id="lp_header_logo" />
-            <span className="lp-brand-name">FactoryMind AI</span>
+            <FactoryMindLogo width={36} height={36} className="lp-header-logo" />
+            <div className="lp-brand-text">
+              <span className="lp-brand-name">FactoryMind</span>
+              <span className="lp-brand-badge">DIGITAL TWIN AI</span>
+            </div>
           </div>
 
           <div className="lp-auth-actions">
@@ -94,10 +87,9 @@ export default function LandingPage() {
             <button
               className="lp-signin-btn"
               onClick={() => setAuthModalOpen(true)}
-              disabled={transitioning}
             >
-              <FactoryMindLogo width={14} height={20} id="lp_btn_logo" />
-              <span style={{ marginLeft: 4 }}>
+              <FactoryMindLogo width={18} height={18} />
+              <span style={{ marginLeft: 8 }}>
                 {isAuthenticated && user ? "Switch Account" : "Select Account / SSO"}
               </span>
             </button>
@@ -125,7 +117,6 @@ export default function LandingPage() {
               <button
                 className="lp-cta"
                 onClick={handleLoginCtaClick}
-                disabled={transitioning}
                 id="enter-dashboard-btn"
               >
                 <span>Login To Digital Twin</span>
