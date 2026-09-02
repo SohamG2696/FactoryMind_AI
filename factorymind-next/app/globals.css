@@ -4378,3 +4378,788 @@ footer {
   font-weight: 600;
   color: var(--text-secondary);
 }
+
+/* ===============================
+   Live Simulation Module Styles
+================================ */
+
+.sim-page-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 28px;
+  background: rgba(13, 14, 26, 0.85);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.sim-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sim-brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.sim-brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--primary);
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+.sim-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+}
+
+.sim-topbar-center span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.sim-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sim-nav-btn.primary {
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  color: var(--primary-light);
+}
+
+.sim-nav-btn.primary:hover {
+  background: rgba(167, 139, 250, 0.22);
+  border-color: var(--primary);
+  box-shadow: 0 0 16px var(--primary-glow);
+  transform: translateY(-1px);
+}
+
+.sim-nav-btn.secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.sim-nav-btn.secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-focus);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.sim-main-container {
+  padding: 24px 32px 40px 32px;
+  flex: 1;
+  max-width: 1700px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Simulation Hub Control Banner */
+.sim-hub-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(17, 18, 31, 0.95), rgba(13, 14, 26, 0.9));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.sim-hub-banner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
+.sim-banner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--primary);
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.sim-banner-heading {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sim-banner-heading span.highlight {
+  color: var(--primary);
+  background: linear-gradient(135deg, var(--primary-light), var(--primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sim-banner-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.sim-controls-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 10px;
+  border-radius: var(--radius-lg);
+}
+
+.sim-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-main);
+}
+
+.sim-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-focus);
+  color: var(--text-main);
+}
+
+.sim-btn.play-state {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.35);
+  color: var(--success);
+}
+
+.sim-btn.play-state:hover {
+  background: rgba(74, 222, 128, 0.22);
+  box-shadow: 0 0 14px var(--success-glow);
+}
+
+.sim-btn.pause-state {
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.35);
+  color: var(--warning);
+}
+
+.sim-btn.pause-state:hover {
+  background: rgba(250, 204, 21, 0.22);
+  box-shadow: 0 0 14px var(--warning-glow);
+}
+
+.sim-btn.speed-btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 10px;
+}
+
+.sim-btn.speed-btn.active {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: var(--primary);
+  color: var(--primary-light);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.sim-btn.danger-btn {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: var(--danger);
+}
+
+.sim-btn.danger-btn:hover {
+  background: rgba(248, 113, 113, 0.24);
+  box-shadow: 0 0 14px var(--danger-glow);
+  border-color: var(--danger);
+}
+
+/* Floor & SCADA Layout Grid */
+.sim-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+@media (max-width: 1200px) {
+  .sim-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sim-floor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 22px;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.sim-floor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sim-flow-chain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--primary-light);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+
+.sim-machine-matrix {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 990px) {
+  .sim-machine-matrix {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .sim-machine-matrix {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Machine Unit Card */
+.sim-cell-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.sim-cell-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus);
+  background: var(--bg-card-hover);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.sim-cell-card.status-healthy {
+  border-color: rgba(74, 222, 128, 0.35);
+}
+.sim-cell-card.status-healthy:hover {
+  border-color: var(--success);
+  box-shadow: 0 0 24px var(--success-glow);
+}
+
+.sim-cell-card.status-warning {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+.sim-cell-card.status-warning:hover {
+  border-color: var(--warning);
+  box-shadow: 0 0 24px var(--warning-glow);
+}
+
+.sim-cell-card.status-critical {
+  border-color: rgba(248, 113, 113, 0.55);
+}
+.sim-cell-card.status-critical:hover {
+  border-color: var(--danger);
+  box-shadow: 0 0 28px var(--danger-glow);
+}
+
+.sim-cell-card.status-downtime {
+  border-color: rgba(148, 163, 184, 0.3);
+  opacity: 0.85;
+}
+
+.sim-cell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(8, 9, 20, 0.7);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-cell-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.sim-cell-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.sim-status-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.sim-status-pill.healthy {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.sim-status-pill.warning {
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.sim-status-pill.critical {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.sim-status-pill.downtime {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.sim-svg-viewport {
+  height: 145px;
+  background: radial-gradient(circle at center, rgba(17, 18, 31, 0.8), rgba(8, 9, 20, 0.95));
+  position: relative;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-fault-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  background: rgba(248, 113, 113, 0.2);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 10px var(--danger-glow);
+  z-index: 5;
+}
+
+.sim-telemetry-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(8, 9, 20, 0.4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-telemetry-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.sim-telemetry-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.sim-telemetry-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.sim-health-bar-row {
+  padding: 8px 10px 6px 10px;
+}
+
+.sim-health-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+}
+
+.sim-progress-track {
+  height: 5px;
+  background: var(--bg-card-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.35s ease, background-color 0.35s ease;
+}
+
+.sim-action-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px 10px 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sim-action-btn {
+  flex: 1;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: var(--font-main);
+}
+
+.sim-action-btn.wear {
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.3);
+  color: var(--warning);
+}
+.sim-action-btn.wear:hover {
+  background: rgba(250, 204, 21, 0.25);
+  box-shadow: 0 0 10px var(--warning-glow);
+}
+
+.sim-action-btn.heat {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+.sim-action-btn.heat:hover {
+  background: rgba(248, 113, 113, 0.25);
+  box-shadow: 0 0 10px var(--danger-glow);
+}
+
+.sim-action-btn.fix {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: var(--info);
+}
+.sim-action-btn.fix:hover {
+  background: rgba(96, 165, 250, 0.25);
+  box-shadow: 0 0 10px var(--info-glow);
+}
+
+/* SCADA Event Feed Panel */
+.sim-scada-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  max-height: 720px;
+}
+
+.sim-scada-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-scada-logs-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.sim-log-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  line-height: 1.4;
+  transition: background 0.15s ease;
+}
+
+.sim-log-item:hover {
+  background: var(--bg-card-hover);
+}
+
+.sim-log-time {
+  color: var(--text-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sim-log-msg {
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.sim-log-item.crit {
+  border-left: 3px solid var(--danger);
+  background: rgba(248, 113, 113, 0.05);
+}
+.sim-log-item.crit .sim-log-msg {
+  color: #fca5a5;
+}
+
+.sim-log-item.warn {
+  border-left: 3px solid var(--warning);
+  background: rgba(250, 204, 21, 0.05);
+}
+.sim-log-item.warn .sim-log-msg {
+  color: #fde047;
+}
+
+.sim-log-item.ok {
+  border-left: 3px solid var(--success);
+  background: rgba(74, 222, 128, 0.05);
+}
+.sim-log-item.ok .sim-log-msg {
+  color: #86efac;
+}
+
+.sim-log-item.info {
+  border-left: 3px solid var(--info);
+  background: rgba(96, 165, 250, 0.05);
+}
+
+/* Machine Inspector Modal */
+.sim-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 9, 20, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(12px);
+  padding: 16px;
+}
+
+.sim-modal-card {
+  background: var(--bg-card-elevated);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  width: min(760px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.sim-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.sim-modal-close-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sim-modal-close-btn:hover {
+  color: var(--text-main);
+  border-color: var(--primary);
+}
+
+.sim-modal-svg-wrap {
+  height: 220px;
+  background: radial-gradient(circle at center, rgba(17, 18, 31, 0.9), rgba(8, 9, 20, 0.98));
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.sim-modal-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .sim-modal-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sim-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.sim-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sim-chart-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.sim-chart-val {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.sim-ai-inference-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  position: relative;
+}
+
+.sim-ai-inference-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--primary);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.sim-ai-inference-body {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
