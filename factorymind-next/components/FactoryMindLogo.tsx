@@ -39,7 +39,7 @@ export default function FactoryMindLogo({
           width: "100%",
           height: "100%",
           objectFit: "contain",
-          filter: "drop-shadow(0 2px 8px rgba(167, 139, 250, 0.25))",
+          filter: "drop-shadow(0 2px 8px rgba(255, 90, 31, 0.25))",
         }}
       />
     </div>

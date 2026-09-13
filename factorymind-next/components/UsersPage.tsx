@@ -79,7 +79,7 @@ export default function UsersPage() {
       {/* Role Stats Row */}
       <div className="users-stats-row">
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(250, 204, 21, 0.12)", color: "#FACC15" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(200, 125, 31, 0.12)", color: "#C87D1F" }}>
             <FontAwesomeIcon icon={faUserShield} />
           </div>
           <div>
@@ -89,7 +89,7 @@ export default function UsersPage() {
         </div>
 
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(96, 165, 250, 0.12)", color: "#60A5FA" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(74, 109, 140, 0.12)", color: "#4A6D8C" }}>
             <FontAwesomeIcon icon={faUserTie} />
           </div>
           <div>
@@ -99,7 +99,7 @@ export default function UsersPage() {
         </div>
 
         <div className="user-stat-card">
-          <div className="stat-icon-wrap" style={{ background: "rgba(74, 222, 128, 0.12)", color: "#4ADE80" }}>
+          <div className="stat-icon-wrap" style={{ background: "rgba(63, 122, 95, 0.12)", color: "#3F7A5F" }}>
             <FontAwesomeIcon icon={faUserGear} />
           </div>
           <div>
@@ -110,7 +110,7 @@ export default function UsersPage() {
       </div>
 
       {message && (
-        <div style={{ background: "rgba(74, 222, 128, 0.12)", border: "1px solid rgba(74, 222, 128, 0.3)", color: "#86efac", padding: "10px 16px", borderRadius: 12, marginBottom: 16 }}>
+        <div style={{ background: "rgba(63, 122, 95, 0.12)", border: "1px solid rgba(63, 122, 95, 0.3)", color: "#274E3A", padding: "10px 16px", borderRadius: 12, marginBottom: 16 }}>
           <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
           {message}
         </div>
@@ -198,7 +198,7 @@ export default function UsersPage() {
 
                   {/* Title / Position */}
                   <td>
-                    <span style={{ fontWeight: 500, color: "#cbd5e1", fontSize: 13 }}>{u.title}</span>
+                    <span style={{ fontWeight: 500, color: "#3A3630", fontSize: 13 }}>{u.title}</span>
                   </td>
 
                   {/* Role Column */}
@@ -235,7 +235,7 @@ export default function UsersPage() {
                     <td>
                       <div className="user-actions-cell">
                         {u.fixedClearance ? (
-                          <span style={{ fontSize: 11, color: "#94a3b8", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ fontSize: 11, color: "#7A7770", display: "inline-flex", alignItems: "center", gap: 4 }}>
                             <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#f59e0b" }} />
                             Fixed Slot
                           </span>

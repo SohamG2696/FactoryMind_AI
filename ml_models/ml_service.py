@@ -459,6 +459,12 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
         run_tests()
     else:
-        port = int(os.environ.get("PORT", 8000))
-        print(f"[ML Service] Starting FastAPI server on port {port}...")
-        uvicorn.run("ml_service:app", host="127.0.0.1", port=port, reload=False)
+        if not FASTAPI_AVAILABLE:
+            print("[ML Service] FastAPI or Uvicorn is not installed. Please install dependencies from requirements.txt")
+            print("[ML Service] Running tests instead...")
+            run_tests()
+        else:
+            port = int(os.environ.get("PORT", 8000))
+            print(f"[ML Service] Starting FastAPI server on port {port}...")
+            uvicorn.run("ml_service:app", host="127.0.0.1", port=port, reload=False)
+

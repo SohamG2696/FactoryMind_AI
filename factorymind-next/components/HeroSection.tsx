@@ -82,7 +82,7 @@ export default function HeroSection({
           <div className="hero-role-pill">
             <FontAwesomeIcon
               icon={isAdmin ? faUserShield : isSupervisor ? faUserTie : faUserGear}
-              style={{ color: isAdmin ? "#FACC15" : isSupervisor ? "#60A5FA" : "#4ADE80" }}
+              style={{ color: isAdmin ? "#C87D1F" : isSupervisor ? "#4A6D8C" : "#3F7A5F" }}
             />
             <span className="hero-role-name">
               {isAdmin
@@ -136,7 +136,7 @@ export default function HeroSection({
               onClick={handleAiInsightsClick}
               id="hero-ai-insights-btn"
             >
-              <FontAwesomeIcon icon={faMicrochip} style={{ marginRight: 8, color: "#A78BFA" }} />
+              <FontAwesomeIcon icon={faMicrochip} style={{ marginRight: 8, color: "#FF5A1F" }} />
               <span>{isAdmin ? "AI Governance Insights" : isSupervisor ? "Floor Diagnostics" : "Operator Safety Guide"}</span>
             </button>
           </div>
@@ -159,7 +159,7 @@ export default function HeroSection({
             </div>
             <div className="hero-stat-sep" />
             <div className="hero-stat-item">
-              <span className="hero-stat-value" style={{ color: "#4ADE80" }}>97.4%</span>
+              <span className="hero-stat-value" style={{ color: "#3F7A5F" }}>97.4%</span>
               <span className="hero-stat-label">AI Accuracy</span>
             </div>
           </div>

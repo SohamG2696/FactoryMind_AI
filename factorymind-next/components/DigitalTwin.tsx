@@ -22,10 +22,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const STATUS_COLORS: Record<string, string> = {
-  green: "#4ADE80",
-  yellow: "#FACC15",
-  red: "#F87171",
-  blue: "#A78BFA",
+  green: "#3F7A5F",
+  yellow: "#C87D1F",
+  red: "#B23A3A",
+  blue: "#FF5A1F",
 };
 
 const STATUS_CHAOS: Record<string, number> = {
@@ -233,7 +233,7 @@ export default function DigitalTwin() {
               <div className="dt-telemetry-grid">
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faTemperatureHalf} style={{ color: "#F87171" }} />
+                    <FontAwesomeIcon icon={faTemperatureHalf} style={{ color: "#B23A3A" }} />
                     <span>Operating Temperature</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.temp}</div>
@@ -241,7 +241,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faGaugeHigh} style={{ color: "#A78BFA" }} />
+                    <FontAwesomeIcon icon={faGaugeHigh} style={{ color: "#FF5A1F" }} />
                     <span>Spindle / Motor Speed</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.rpm}</div>
@@ -249,7 +249,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faWaveSquare} style={{ color: "#FACC15" }} />
+                    <FontAwesomeIcon icon={faWaveSquare} style={{ color: "#C87D1F" }} />
                     <span>Vibration Amplitude</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.vibration}</div>
@@ -257,7 +257,7 @@ export default function DigitalTwin() {
 
                 <div className="dt-telemetry-card">
                   <div className="dt-tc-label">
-                    <FontAwesomeIcon icon={faBolt} style={{ color: "#4ADE80" }} />
+                    <FontAwesomeIcon icon={faBolt} style={{ color: "#3F7A5F" }} />
                     <span>Load Utilization</span>
                   </div>
                   <div className="dt-tc-value">{selectedMachine.telemetry.load}</div>
@@ -268,7 +268,7 @@ export default function DigitalTwin() {
               <div className="dt-ai-verdict-box">
                 <div className="dt-verdict-header">
                   <div className="dt-vh-title">
-                    <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#A78BFA" }} />
+                    <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#FF5A1F" }} />
                     <strong>Digital Twin AI Inference</strong>
                   </div>
                   <span className="dt-verdict-model">{selectedMachine.telemetry.predictiveModel}</span>
@@ -276,12 +276,12 @@ export default function DigitalTwin() {
                 <div className="dt-verdict-content">
                   <div className="dt-verdict-score-row">
                     <span>Machine Health Score:</span>
-                    <strong style={{ color: selectedMachine.telemetry.healthScore > 75 ? "#4ADE80" : "#F87171" }}>
+                    <strong style={{ color: selectedMachine.telemetry.healthScore > 75 ? "#3F7A5F" : "#B23A3A" }}>
                       {selectedMachine.telemetry.healthScore}%
                     </strong>
                     <span className="dt-verdict-sep">·</span>
                     <span>Risk:</span>
-                    <strong style={{ color: selectedMachine.status === "red" ? "#F87171" : selectedMachine.status === "yellow" ? "#FACC15" : "#4ADE80" }}>
+                    <strong style={{ color: selectedMachine.status === "red" ? "#B23A3A" : selectedMachine.status === "yellow" ? "#C87D1F" : "#3F7A5F" }}>
                       {selectedMachine.telemetry.riskLevel}
                     </strong>
                   </div>

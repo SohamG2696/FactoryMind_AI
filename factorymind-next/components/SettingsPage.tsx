@@ -110,7 +110,7 @@ export default function SettingsPage() {
           <div key={group.group} className="maintenance-card" style={{ marginBottom: 24 }}>
             <div className="settings-card-header">
               <h2>
-                <FontAwesomeIcon icon={group.icon} style={{ marginRight: 10, fontSize: 18, color: "#A78BFA" }} />
+                <FontAwesomeIcon icon={group.icon} style={{ marginRight: 10, fontSize: 18, color: "#FF5A1F" }} />
                 {group.group}
               </h2>
             </div>

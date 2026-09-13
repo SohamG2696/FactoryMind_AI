@@ -156,7 +156,7 @@ export default function AuthModal({
             {selectedUser ? (
               <span>Confirm security credentials for <strong>{selectedUser.name}</strong></span>
             ) : (
-              <span>to switch identity in <strong style={{ color: "#A78BFA" }}>FactoryMind AI</strong></span>
+              <span>to switch identity in <strong style={{ color: "#FF5A1F" }}>FactoryMind AI</strong></span>
             )}
           </p>
         </div>
@@ -242,7 +242,7 @@ export default function AuthModal({
 
             {/* Enterprise Clearance Footnote */}
             <div className="google-security-footnote">
-              <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#4ADE80", marginRight: 6 }} />
+              <FontAwesomeIcon icon={faShieldHalved} style={{ color: "#3F7A5F", marginRight: 6 }} />
               <span>Plant RBAC: 4 Administrator and 4 Supervisor slots are pre-assigned & locked.</span>
             </div>
           </div>

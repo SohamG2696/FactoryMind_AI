@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useFactorySim, MachineState } from "@/hooks/useFactorySim";
+import { useMemo, useState } from "react";
+import { useFactorySim, MachineState, EventCategory } from "@/hooks/useFactorySim";
+import FactoryFloorSVG from "@/components/FactoryFloorSVG";
+import ProductionFlowStrip from "@/components/ProductionFlowStrip";
 import { MachineSVG } from "@/components/MachineSVGs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,21 +11,19 @@ import {
   faPause,
   faRotateLeft,
   faBolt,
+  faXmark,
+  faClock,
+  faIndustry,
+  faSignal,
+  faBoxesStacked,
+  faTruck,
+  faLayerGroup,
+  faHeartPulse,
+  faArrowUp,
+  faShieldHalved,
   faFire,
   faScrewdriverWrench,
-  faXmark,
-  faGaugeHigh,
-  faHeartPulse,
-  faIndustry,
   faCircleDot,
-  faRobot,
-  faMicrochip,
-  faGears,
-  faWaveSquare,
-  faArrowRight,
-  faCheckCircle,
-  faTriangleExclamation,
-  faCircleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -33,214 +33,97 @@ const STATUS_LABEL: Record<string, string> = {
   downtime: "DOWN",
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  healthy: "var(--success)",
-  warning: "var(--warning)",
-  critical: "var(--danger)",
-  downtime: "var(--text-muted)",
-};
+/* ─────────── mini charts ─────────── */
 
-function Sparkline({
-  data,
-  color,
-  height = 40,
-  max,
-}: {
-  data: number[];
-  color: string;
-  height?: number;
-  max?: number;
-}) {
+function MiniLine({ data, color, height = 40 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 2) return <div style={{ height }} />;
+  const w = 160;
+  const h = height;
+  const mx = Math.max(...data);
+  const mn = Math.min(...data);
+  const range = mx - mn || 1;
+  const step = w / (data.length - 1);
+  const pts = data.map((v, i) => `${i * step},${h - ((v - mn) / range) * (h - 4) - 2}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
+      <polyline points={`0,${h} ${pts} ${w},${h}`} fill={color} opacity="0.13" />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function MiniBars({ data, color, height = 40 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 1) return <div style={{ height }} />;
+  const w = 160;
+  const h = height;
+  const mx = Math.max(...data, 1);
+  const barW = w / data.length - 2;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
+      {data.map((v, i) => (
+        <rect
+          key={i}
+          x={i * (barW + 2)}
+          y={h - (v / mx) * (h - 4) - 2}
+          width={barW}
+          height={(v / mx) * (h - 4)}
+          fill={color}
+          opacity={i === data.length - 1 ? 1 : 0.55}
+          rx="1"
+        />
+      ))}
+    </svg>
+  );
+}
+
+/* ─────────── inspector modal (kept, updated a bit) ─────────── */
+
+function Sparkline({ data, color, height = 44 }: { data: number[]; color: string; height?: number }) {
   if (data.length < 2) return <div style={{ height }} />;
   const w = 220;
   const h = height;
-  const mx = max ?? Math.max(...data, 1);
+  const mx = Math.max(...data, 1);
   const mn = Math.min(...data, 0);
   const range = mx - mn || 1;
   const step = w / (data.length - 1);
   const pts = data.map((v, i) => `${i * step},${h - ((v - mn) / range) * h}`).join(" ");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline
-        points={`0,${h} ${pts} ${w},${h}`}
-        fill={color}
-        opacity="0.15"
-      />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" />
+      <polyline points={`0,${h} ${pts} ${w},${h}`} fill={color} opacity="0.14" />
     </svg>
-  );
-}
-
-function MachineCard({
-  m,
-  onInspect,
-  onFault,
-  onDispatch,
-}: {
-  m: MachineState;
-  onInspect: () => void;
-  onFault: (kind: "wear" | "thermal") => void;
-  onDispatch: () => void;
-}) {
-  const statusCls = `status-${m.status}`;
-  const color =
-    m.status === "healthy" ? "var(--success)" :
-    m.status === "warning" ? "var(--warning)" :
-    m.status === "critical" ? "var(--danger)" : "var(--text-muted)";
-
-  return (
-    <div className={`sim-cell-card ${statusCls}`}>
-      {/* Header */}
-      <div className="sim-cell-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="sim-cell-code">{m.code}</span>
-          <span className="sim-cell-title">{m.label}</span>
-        </div>
-        <span className={`sim-status-pill ${m.status}`}>
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: "50%",
-              backgroundColor: "currentColor",
-              display: "inline-block",
-            }}
-          />
-          {STATUS_LABEL[m.status]}
-        </span>
-      </div>
-
-      {/* SVG Canvas Preview */}
-      <div className="sim-svg-viewport" onClick={onInspect} title="Click to inspect telemetry">
-        <MachineSVG m={m} />
-        {m.faultTag && (
-          <div className="sim-fault-badge">
-            <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 4 }} />
-            {m.faultTag}
-          </div>
-        )}
-      </div>
-
-      {/* Stats Row */}
-      <div className="sim-telemetry-strip">
-        <div className="sim-telemetry-item">
-          <span className="sim-telemetry-label">Temp</span>
-          <span className="sim-telemetry-val" style={{ color: "var(--danger)" }}>
-            {m.temperature.toFixed(0)}°C
-          </span>
-        </div>
-        <div className="sim-telemetry-item">
-          <span className="sim-telemetry-label">{m.kind === "robot" ? "Rad/s" : "RPM"}</span>
-          <span className="sim-telemetry-val" style={{ color: "var(--primary)" }}>
-            {m.rpm.toFixed(0)}
-          </span>
-        </div>
-        <div className="sim-telemetry-item">
-          <span className="sim-telemetry-label">Vib</span>
-          <span className="sim-telemetry-val" style={{ color: "var(--warning)" }}>
-            {m.vibration.toFixed(1)}
-          </span>
-        </div>
-      </div>
-
-      {/* Health Bar */}
-      <div className="sim-health-bar-row">
-        <div className="sim-health-meta">
-          <span>Health: {m.health.toFixed(0)}%</span>
-          <span>Q:{m.queue} · P:{m.produced}</span>
-        </div>
-        <div className="sim-progress-track">
-          <div
-            className="sim-progress-fill"
-            style={{
-              width: `${Math.max(0, Math.min(100, m.health))}%`,
-              backgroundColor: color,
-              boxShadow: `0 0 8px ${color}`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Action Controls */}
-      <div className="sim-action-row">
-        <button
-          className="sim-action-btn wear"
-          onClick={(e) => {
-            e.stopPropagation();
-            onFault("wear");
-          }}
-          title="Inject mechanical bearing wear fault"
-        >
-          <FontAwesomeIcon icon={faScrewdriverWrench} style={{ fontSize: 9 }} />
-          <span>Wear</span>
-        </button>
-        <button
-          className="sim-action-btn heat"
-          onClick={(e) => {
-            e.stopPropagation();
-            onFault("thermal");
-          }}
-          title="Inject coolant disruption thermal event"
-        >
-          <FontAwesomeIcon icon={faFire} style={{ fontSize: 9 }} />
-          <span>Heat</span>
-        </button>
-        <button
-          className="sim-action-btn fix"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDispatch();
-          }}
-          title="Dispatch automated maintenance crew"
-        >
-          <FontAwesomeIcon icon={faGears} style={{ fontSize: 9 }} />
-          <span>Fix</span>
-        </button>
-      </div>
-    </div>
   );
 }
 
 function InspectorModal({
   m,
   onClose,
+  onFault,
+  onDispatch,
 }: {
   m: MachineState;
   onClose: () => void;
+  onFault: (kind: "wear" | "thermal") => void;
+  onDispatch: () => void;
 }) {
   const temps = m.history.map((h) => h.temp);
   const rpms = m.history.map((h) => h.rpm);
   const vibs = m.history.map((h) => h.vib);
-  const color =
-    m.status === "healthy" ? "var(--success)" :
-    m.status === "warning" ? "var(--warning)" :
-    m.status === "critical" ? "var(--danger)" : "var(--text-muted)";
 
   return (
     <div className="sim-modal-backdrop" onClick={onClose}>
       <div className="sim-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="sim-modal-header">
           <div>
-            <div style={{ fontSize: 11, color: "var(--primary)", fontFamily: "var(--font-mono)", fontWeight: 700 }}>
-              {m.code} · TELEMETRY INSPECTOR
-            </div>
-            <h2 style={{ margin: "4px 0 6px 0", color: "var(--text-main)", fontSize: 20, fontWeight: 800 }}>
+            <div className="sim-cell-code" style={{ fontSize: 11 }}>{m.code}</div>
+            <h2 style={{ margin: "6px 0", color: "var(--text-main)", fontSize: 22, fontWeight: 800 }}>
               {m.label}
             </h2>
-            <span className={`sim-status-pill ${m.status}`}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  backgroundColor: "currentColor",
-                  display: "inline-block",
-                }}
-              />
-              {STATUS_LABEL[m.status]} · {m.health.toFixed(0)}% HEALTH
+            <span className={`sim-status-pill ${m.status}`} style={{ fontSize: 11, padding: "3px 10px" }}>
+              {STATUS_LABEL[m.status]} · {m.health.toFixed(0)}% health
             </span>
           </div>
-          <button className="sim-modal-close-btn" onClick={onClose} title="Close Inspector">
+          <button className="sim-modal-close-btn" onClick={onClose}>
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
@@ -250,45 +133,43 @@ function InspectorModal({
         </div>
 
         <div className="sim-modal-charts-grid">
-          <ChartCard label="TEMPERATURE (°C)" val={`${m.temperature.toFixed(1)}°C`} data={temps} color="var(--danger)" />
-          <ChartCard label="OPERATING RPM" val={m.rpm.toFixed(0)} data={rpms} color="var(--primary)" />
-          <ChartCard label="VIBRATION (MM/S)" val={m.vibration.toFixed(2)} data={vibs} color="var(--warning)" />
+          <ChartCard label="TEMPERATURE °C" val={m.temperature.toFixed(1)} data={temps} color="var(--danger)" />
+          <ChartCard label="RPM" val={m.rpm.toFixed(0)} data={rpms} color="var(--primary)" />
+          <ChartCard label="VIBRATION mm/s" val={m.vibration.toFixed(2)} data={vibs} color="var(--warning)" />
           <ChartCard
-            label="TOOL WEAR INDEX (%)"
-            val={`${m.toolWear.toFixed(0)}%`}
-            data={m.history.map((_, i) => (m.toolWear * (i + 1)) / (m.history.length || 1))}
-            color="var(--info)"
+            label="TOOL WEAR %"
+            val={m.toolWear.toFixed(0)}
+            data={m.history.map((_, i) => m.toolWear * ((i + 1) / m.history.length))}
+            color="#B85A1F"
           />
         </div>
 
         <div className="sim-ai-inference-card">
           <div className="sim-ai-inference-title">
-            <FontAwesomeIcon icon={faRobot} />
-            <span>DIGITAL TWIN REAL-TIME INFERENCE</span>
+            <FontAwesomeIcon icon={faShieldHalved} /> DIGITAL TWIN INFERENCE
           </div>
           <div className="sim-ai-inference-body">
-            Queue depth <strong style={{ color: "var(--warning)" }}>{m.queue}</strong> of capacity {m.capacity}. Current throughput is{" "}
-            <strong style={{ color: "var(--success)" }}>{m.throughput.toFixed(1)} u/min</strong> at{" "}
-            <strong style={{ color: "var(--text-main)" }}>{(m.load * 100).toFixed(0)}%</strong> load.
+            Queue depth <b style={{ color: "var(--primary)" }}>{m.queue}</b> of capacity {m.capacity}. Throughput{" "}
+            <b style={{ color: "var(--success)" }}>{m.throughput.toFixed(1)} u/min</b>. Load{" "}
+            <b style={{ color: "var(--text-main)" }}>{(m.load * 100).toFixed(0)}%</b>.
             {m.status === "critical" && (
-              <div style={{ marginTop: 8, color: "var(--danger)", fontWeight: 600 }}>
-                <FontAwesomeIcon icon={faCircleExclamation} style={{ marginRight: 6 }} />
-                Critical alert: Automated shutdown initiated if health drops below 25%. Dispatch maintenance immediately.
-              </div>
-            )}
-            {m.status === "warning" && (
-              <div style={{ marginTop: 8, color: "var(--warning)", fontWeight: 600 }}>
-                <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 6 }} />
-                Degraded performance detected: Vibration/thermal anomalies exceeding nominal tolerances.
-              </div>
-            )}
-            {m.status === "healthy" && (
-              <div style={{ marginTop: 8, color: "var(--success)" }}>
-                <FontAwesomeIcon icon={faCheckCircle} style={{ marginRight: 6 }} />
-                All sensors reporting nominal harmonics. Tool wear within expected lifespan tolerance.
+              <div style={{ marginTop: 8, color: "var(--danger)" }}>
+                🔴 Critical: consider immediate maintenance to prevent auto-downtime at health &lt; 25%.
               </div>
             )}
           </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button className="sim-btn" onClick={() => onFault("wear")}>
+            <FontAwesomeIcon icon={faScrewdriverWrench} /> Inject Wear
+          </button>
+          <button className="sim-btn danger-btn" onClick={() => onFault("thermal")}>
+            <FontAwesomeIcon icon={faFire} /> Inject Coolant Loss
+          </button>
+          <button className="sim-btn play-state" onClick={onDispatch}>
+            <FontAwesomeIcon icon={faScrewdriverWrench} /> Dispatch Maintenance
+          </button>
         </div>
       </div>
     </div>
@@ -302,315 +183,313 @@ function ChartCard({ label, val, data, color }: { label: string; val: string; da
         <span className="sim-chart-label">{label}</span>
         <span className="sim-chart-val" style={{ color }}>{val}</span>
       </div>
-      <Sparkline data={data} color={color} height={42} />
+      <Sparkline data={data} color={color} />
     </div>
   );
 }
 
-function FlowLines() {
-  return (
-    <svg
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        zIndex: 1,
-      }}
-    >
-      <defs>
-        <marker id="sim-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0,0 L8,4 L0,8 z" fill="#A78BFA" opacity="0.8" />
-        </marker>
-      </defs>
-      {/* Warehouse → CNC1 → Robot */}
-      <line x1="16.6%" y1="28%" x2="50%" y2="28%" stroke="#A78BFA" strokeWidth="2" strokeDasharray="5 5" opacity="0.5" markerEnd="url(#sim-arrow)">
-        <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
-      </line>
-      <line x1="50%" y1="28%" x2="83.3%" y2="28%" stroke="#A78BFA" strokeWidth="2" strokeDasharray="5 5" opacity="0.5" markerEnd="url(#sim-arrow)">
-        <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
-      </line>
-      {/* Robot → CNC7 (down + diagonal back) */}
-      <path d="M 83.3% 28% Q 92% 50% 16.6% 72%" stroke="#A78BFA" strokeWidth="2" strokeDasharray="5 5" fill="none" opacity="0.45" markerEnd="url(#sim-arrow)">
-        <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
-      </path>
-      {/* CNC7 → Press → Conveyor */}
-      <line x1="16.6%" y1="72%" x2="50%" y2="72%" stroke="#A78BFA" strokeWidth="2" strokeDasharray="5 5" opacity="0.5" markerEnd="url(#sim-arrow)">
-        <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
-      </line>
-      <line x1="50%" y1="72%" x2="83.3%" y2="72%" stroke="#A78BFA" strokeWidth="2" strokeDasharray="5 5" opacity="0.5" markerEnd="url(#sim-arrow)">
-        <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="1s" repeatCount="indefinite" />
-      </line>
-    </svg>
-  );
-}
-
+/* ─────────── the page ─────────── */
 export default function FactorySimulation() {
-  const { state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance } = useFactorySim();
+  const { state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance, wallClock, wallDate } = useFactorySim();
   const [inspectId, setInspectId] = useState<string | null>(null);
-  const feedRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll event feed on new entries
-  useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTop = feedRef.current.scrollHeight;
-    }
-  }, [state.events.length]);
+  const [tab, setTab] = useState<"all" | EventCategory>("all");
 
   const inspect = inspectId ? state.machines.find((m) => m.id === inspectId) || null : null;
-  const activeAlerts = state.machines.filter((m) => m.status === "critical" || m.status === "downtime").length;
-  const avgHealth = state.machines.reduce((s, m) => s + m.health, 0) / state.machines.length;
+
+  const activeAgvs = state.agvs.filter((a) => a.status === "moving").length;
+
+  const filteredEvents = useMemo(() => {
+    if (tab === "all") return state.events;
+    return state.events.filter((e) => e.category === tab);
+  }, [state.events, tab]);
+
+  const kpiDelta = state.kpiHistory.produced.length >= 2
+    ? state.kpiHistory.produced[state.kpiHistory.produced.length - 1] -
+      state.kpiHistory.produced[Math.max(0, state.kpiHistory.produced.length - 6)]
+    : 12;
 
   return (
     <>
-      {inspect && <InspectorModal m={inspect} onClose={() => setInspectId(null)} />}
+      {inspect && (
+        <InspectorModal
+          m={inspect}
+          onClose={() => setInspectId(null)}
+          onFault={(k) => injectFault(inspect.id, k)}
+          onDispatch={() => dispatchMaintenance(inspect.id)}
+        />
+      )}
 
-      {/* Control Banner */}
+      {/* Hero banner with title + controls + clock */}
       <div className="sim-hub-banner">
-        <div>
+        <div style={{ flex: 1 }}>
           <div className="sim-banner-tag">
             <span
               style={{
-                width: 7,
-                height: 7,
+                width: 6,
+                height: 6,
                 borderRadius: "50%",
                 background: state.running ? "var(--success)" : "var(--text-muted)",
-                boxShadow: state.running ? "0 0 8px var(--success)" : "none",
               }}
             />
-            <span>SCADA ENGINE TICK: t{state.tick.toString().padStart(4, "0")}</span>
+            LIVE · TICK {state.tick}
           </div>
           <h1 className="sim-banner-heading">
             <FontAwesomeIcon icon={faIndustry} style={{ color: "var(--primary)" }} />
-            <span>Digital Twin — </span>
-            <span className="highlight">Discrete Simulation</span>
+            Factory Digital Twin <span className="highlight">— Running Simulation</span>
           </h1>
-          <p className="sim-banner-desc">
-            Real-time physics and state propagation engine across production workcells. Inject telemetry faults and observe line cascades.
-          </p>
+          <div className="sim-banner-desc">
+            Discrete-event floor model · 6 cells · production chain with fault propagation &amp; auto-repair
+          </div>
         </div>
 
-        {/* Action Controls */}
         <div className="sim-controls-toolbar">
           {state.running ? (
-            <button className="sim-btn pause-state" onClick={pause} title="Pause Simulation">
-              <FontAwesomeIcon icon={faPause} />
-              <span>Pause</span>
+            <button className="sim-btn pause-state" onClick={pause}>
+              <FontAwesomeIcon icon={faPause} /> Pause
             </button>
           ) : (
-            <button className="sim-btn play-state" onClick={play} title="Resume Simulation">
-              <FontAwesomeIcon icon={faPlay} />
-              <span>Resume</span>
+            <button className="sim-btn play-state" onClick={play}>
+              <FontAwesomeIcon icon={faPlay} /> Play
             </button>
           )}
-
           {[1, 2, 5].map((s) => (
             <button
               key={s}
               className={`sim-btn speed-btn ${state.speed === s ? "active" : ""}`}
               onClick={() => setSpeed(s)}
-              title={`Set simulation speed to ${s}×`}
             >
               {s}×
             </button>
           ))}
-
-          <button className="sim-btn" onClick={reset} title="Reset factory state">
-            <FontAwesomeIcon icon={faRotateLeft} />
-            <span>Reset</span>
+          <button className="sim-btn" onClick={reset}>
+            <FontAwesomeIcon icon={faRotateLeft} /> Reset
           </button>
-
-          <button
-            className="sim-btn danger-btn"
-            onClick={() => injectFault("", "surge")}
-            title="Inject facility-wide electrical surge"
-          >
-            <FontAwesomeIcon icon={faBolt} />
-            <span>Surge</span>
+          <button className="sim-btn danger-btn" onClick={() => injectFault("", "surge")}>
+            <FontAwesomeIcon icon={faBolt} /> Surge
           </button>
+        </div>
+
+        <div className="sim-hero-clock">
+          <FontAwesomeIcon icon={faClock} className="sim-hero-clock-icon" />
+          <div>
+            <div className="sim-hero-clock-label">SIMULATION TIME</div>
+            <div className="sim-hero-clock-value">
+              {wallDate} &nbsp;<span>{wallClock}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* KPI Section */}
-      <section className="kpi-section" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-        {/* KPI 1: OEE */}
-        <div className="kpi-card">
-          <div className="kpi-card-inner">
-            <div className="kpi-top-bar">
-              <span className="kpi-tag-code">TAG: SIM-OEE</span>
-              <span className="kpi-live-dot green" />
-            </div>
-            <div className="kpi-main-row">
-              <div className="icon green">
-                <FontAwesomeIcon icon={faHeartPulse} />
-              </div>
-              <div className="kpi-data-block">
-                <h3>Overall OEE</h3>
-                <h2 style={{ color: "var(--success)" }}>{(state.oee * 100).toFixed(1)}%</h2>
-                <p>World Class Benchmark</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 5-KPI strip */}
+      <div className="sim-kpi-mini">
+        <MiniKpiCard
+          icon={faSignal}
+          label="OEE"
+          value={`${(state.oee * 100).toFixed(1)}%`}
+          delta={`+${((state.oee - (state.kpiHistory.oee[0] || 0.98)) * 100).toFixed(1)}%`}
+          deltaPositive
+          chart={<MiniLine data={state.kpiHistory.oee.length ? state.kpiHistory.oee : [0.98, 0.99, 0.995, 0.996]} color="var(--success)" />}
+        />
+        <MiniKpiCard
+          icon={faBoxesStacked}
+          label="TOTAL PRODUCED"
+          value={String(state.totalProduced)}
+          delta={`+${kpiDelta} (${((kpiDelta / Math.max(state.totalProduced, 1)) * 100).toFixed(1)}%)`}
+          deltaPositive
+          chart={<MiniBars data={state.kpiHistory.produced.length ? state.kpiHistory.produced : [8, 10, 9, 12, 11, 12]} color="var(--primary)" />}
+        />
+        <MiniKpiCard
+          icon={faTruck}
+          label="ACTIVE AGVS"
+          value={`${activeAgvs} / ${state.agvs.length}`}
+          sub={activeAgvs === state.agvs.length ? "All Operational" : `${state.agvs.length - activeAgvs} loading`}
+          statusDot="var(--success)"
+        />
+        <MiniKpiCard
+          icon={faLayerGroup}
+          label="WIP (IN SYSTEM)"
+          value={String(state.wip)}
+          chart={<MiniBars data={state.kpiHistory.wip.length ? state.kpiHistory.wip : [10, 11, 12, 13, 12, 12]} color="var(--info)" />}
+        />
+        <MiniKpiCard
+          icon={faHeartPulse}
+          label="AVG HEALTH"
+          value={`${(state.machines.reduce((s, m) => s + m.health, 0) / state.machines.length).toFixed(0)}%`}
+          chart={<MiniLine data={state.kpiHistory.health.length ? state.kpiHistory.health : [98, 97, 98, 99, 98, 99]} color="var(--success)" />}
+        />
+      </div>
 
-        {/* KPI 2: Total Units Produced */}
-        <div className="kpi-card">
-          <div className="kpi-card-inner">
-            <div className="kpi-top-bar">
-              <span className="kpi-tag-code">TAG: SIM-OUTPUT</span>
-              <span className="kpi-live-dot" />
-            </div>
-            <div className="kpi-main-row">
-              <div className="icon blue">
-                <FontAwesomeIcon icon={faIndustry} />
-              </div>
-              <div className="kpi-data-block">
-                <h3>Total Produced</h3>
-                <h2>{state.totalProduced}</h2>
-                <p>Finished Units Shipped</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 3: Active SCADA Alerts */}
-        <div className="kpi-card">
-          <div className="kpi-card-inner">
-            <div className="kpi-top-bar">
-              <span className="kpi-tag-code">TAG: SIM-ALERTS</span>
-              <span className={`kpi-live-dot ${activeAlerts > 0 ? "red" : "green"}`} />
-            </div>
-            <div className="kpi-main-row">
-              <div className={`icon ${activeAlerts > 0 ? "red" : "green"}`}>
-                <FontAwesomeIcon icon={faBolt} />
-              </div>
-              <div className="kpi-data-block">
-                <h3>Active Alerts</h3>
-                <h2 style={{ color: activeAlerts > 0 ? "var(--danger)" : "var(--success)" }}>
-                  {activeAlerts < 10 ? `0${activeAlerts}` : activeAlerts}
-                </h2>
-                <p>{activeAlerts > 0 ? "Requires Dispatch" : "Nominal Tolerances"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 4: Fleet Health */}
-        <div className="kpi-card">
-          <div className="kpi-card-inner">
-            <div className="kpi-top-bar">
-              <span className="kpi-tag-code">TAG: SIM-HEALTH</span>
-              <span className={`kpi-live-dot ${avgHealth > 75 ? "green" : "amber"}`} />
-            </div>
-            <div className="kpi-main-row">
-              <div className={`icon ${avgHealth > 75 ? "green" : "orange"}`}>
-                <FontAwesomeIcon icon={faGaugeHigh} />
-              </div>
-              <div className="kpi-data-block">
-                <h3>Avg Fleet Health</h3>
-                <h2 style={{ color: avgHealth > 75 ? "var(--success)" : "var(--warning)" }}>
-                  {avgHealth.toFixed(0)}%
-                </h2>
-                <p>{avgHealth > 75 ? "Optimal Machinery" : "Maintenance Recommended"}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Main Floor & SCADA Feeds */}
+      {/* Main grid: floor + SCADA */}
       <div className="sim-grid-layout">
-        {/* Factory Floor */}
         <div className="sim-floor-card">
           <div className="sim-floor-header">
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="dt-live-tag">
-                <span className="dt-pulse" />
-                <span>FACTORY FLOOR PLAN · SCADA TOPOLOGY</span>
-              </span>
-            </div>
-
-            <div className="sim-flow-chain">
-              <span>Warehouse</span>
-              <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: 9, opacity: 0.6 }} />
-              <span>CNC-01</span>
-              <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: 9, opacity: 0.6 }} />
-              <span>Robot</span>
-              <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: 9, opacity: 0.6 }} />
-              <span>CNC-07</span>
-              <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: 9, opacity: 0.6 }} />
-              <span>Press</span>
-              <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: 9, opacity: 0.6 }} />
-              <span>Conveyor</span>
-            </div>
+            <span
+              style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                letterSpacing: "0.12em",
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+              }}
+            >
+              FACTORY FLOOR — LIVE SIMULATION
+            </span>
           </div>
 
-          <div style={{ position: "relative", minHeight: 480 }}>
-            <FlowLines />
-            <div className="sim-machine-matrix">
-              {state.machines
-                .slice()
-                .sort((a, b) => a.y * 3 + a.x - (b.y * 3 + b.x))
-                .map((m) => (
-                  <MachineCard
-                    key={m.id}
-                    m={m}
-                    onInspect={() => setInspectId(m.id)}
-                    onFault={(kind) => injectFault(m.id, kind)}
-                    onDispatch={() => dispatchMaintenance(m.id)}
-                  />
-                ))}
-            </div>
+          <div className="sim-floor-viewport">
+            <FactoryFloorSVG
+              machines={state.machines}
+              agvs={state.agvs}
+              currentPart={state.currentPart}
+              onInspect={setInspectId}
+            />
           </div>
         </div>
 
-        {/* SCADA Event Feed */}
         <div className="sim-scada-panel">
           <div className="sim-scada-header">
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 12,
+                color: "var(--text-main)",
+                letterSpacing: "0.08em",
+                fontWeight: 800,
+              }}
+            >
+              LIVE EVENTS · SCADA FEED
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 10,
+                color: "var(--success)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
               <span
                 style={{
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  backgroundColor: "var(--success)",
-                  boxShadow: "0 0 6px var(--success)",
+                  background: "var(--success)",
+                  boxShadow: "0 0 6px var(--success-glow)",
                 }}
               />
-              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--text-main)" }}>
-                SCADA TELEMETRY LOGS
-              </span>
-            </div>
-            <span
-              style={{
-                fontSize: 10,
-                fontFamily: "var(--font-mono)",
-                color: "var(--primary)",
-                background: "rgba(167, 139, 250, 0.1)",
-                padding: "2px 6px",
-                borderRadius: "var(--radius-sm)",
-              }}
-            >
-              {state.events.length} EVENTS
+              Online
             </span>
           </div>
 
-          <div ref={feedRef} className="sim-scada-logs-container">
-            {state.events.length === 0 && (
-              <div style={{ color: "var(--text-muted)", padding: 16, textAlign: "center", fontSize: 11 }}>
-                Nominal state — no critical faults recorded.
+          {/* Filter tabs */}
+          <div className="sim-scada-tabs">
+            <ScadaTab active={tab === "all"} onClick={() => setTab("all")}>All</ScadaTab>
+            <ScadaTab active={tab === "machine"} onClick={() => setTab("machine")}>Machines</ScadaTab>
+            <ScadaTab active={tab === "agv"} onClick={() => setTab("agv")}>AGVs</ScadaTab>
+            <ScadaTab active={tab === "flow"} onClick={() => setTab("flow")}>Material Flow</ScadaTab>
+            <ScadaTab active={tab === "alert"} onClick={() => setTab("alert")}>Alerts</ScadaTab>
+          </div>
+
+          <div className="sim-scada-logs-container">
+            {filteredEvents.length === 0 && (
+              <div style={{ color: "var(--text-muted)", padding: 12, textAlign: "center", fontSize: 12 }}>
+                No events in this category.
               </div>
             )}
-            {state.events.map((ev, i) => (
-              <div key={`${ev.t}-${i}`} className={`sim-log-item ${ev.kind}`}>
-                <span className="sim-log-time">t{ev.t.toString().padStart(4, "0")}</span>
-                <span className="sim-log-msg">{ev.msg}</span>
+            {filteredEvents.map((ev, i) => (
+              <div key={`${ev.t}-${i}`} className={`sim-log-item ${ev.kind} rich`}>
+                <span className="sim-log-time">{ev.wallClock || `t${ev.t.toString().padStart(4, "0")}`}</span>
+                <span className="sim-log-icon">{ev.icon || iconForCategory(ev.category)}</span>
+                <div className="sim-log-body">
+                  <span className="sim-log-title">
+                    {titleForEvent(ev.category, ev.msg)}
+                  </span>
+                  <span className="sim-log-msg">{ev.msg}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Production Flow strip (bottom) */}
+      <ProductionFlowStrip
+        currentPart={state.currentPart}
+        machines={state.machines}
+        cycleTargetMin={state.cycleTargetMin}
+        simSecondsPerTick={state.simSecondsPerTick}
+        currentTick={state.tick}
+        wip={state.wip}
+        throughputPerHour={state.throughputPerHour}
+        bottleneckId={state.bottleneckId}
+      />
     </>
+  );
+}
+
+function iconForCategory(cat: EventCategory): string {
+  switch (cat) {
+    case "machine": return "⚙";
+    case "agv": return "🚚";
+    case "flow": return "📦";
+    case "alert": return "⚠";
+  }
+}
+
+function titleForEvent(cat: EventCategory, msg: string): string {
+  const first = msg.split("—")[0].trim();
+  const words = first.split(" ").slice(0, 5).join(" ");
+  return words;
+}
+
+function ScadaTab({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+  return (
+    <button className={`sim-scada-tab ${active ? "active" : ""}`} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function MiniKpiCard({
+  icon,
+  label,
+  value,
+  delta,
+  deltaPositive,
+  sub,
+  statusDot,
+  chart,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  delta?: string;
+  deltaPositive?: boolean;
+  sub?: string;
+  statusDot?: string;
+  chart?: React.ReactNode;
+}) {
+  return (
+    <div className="sim-kpi-mini-card">
+      <div className="sim-kpi-mini-head">
+        <FontAwesomeIcon icon={icon} className="sim-kpi-mini-icon" />
+        <span className="sim-kpi-mini-label">{label}</span>
+      </div>
+      <div className="sim-kpi-mini-body">
+        <div className="sim-kpi-mini-value">{value}</div>
+        {delta && (
+          <span className={`sim-kpi-mini-delta ${deltaPositive ? "up" : ""}`}>
+            <FontAwesomeIcon icon={faArrowUp} style={{ fontSize: 8 }} /> {delta}
+          </span>
+        )}
+        {sub && (
+          <span className="sim-kpi-mini-sub">
+            {statusDot && <span className="sim-kpi-mini-dot" style={{ background: statusDot }} />}
+            {sub}
+          </span>
+        )}
+      </div>
+      {chart && <div className="sim-kpi-mini-chart">{chart}</div>}
+    </div>
   );
 }

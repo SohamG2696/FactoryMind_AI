@@ -239,8 +239,8 @@ export default function MlWorkbench() {
         <h2>Predictive AI Inference Workbench</h2>
         <p>
           Simulate real-time sensor streams, compute 6 engineered features, and execute end-to-end chained ML inference across{" "}
-          <strong style={{ color: "#A78BFA" }}>best_pm_model.pkl</strong> and{" "}
-          <strong style={{ color: "#C4B5FD" }}>factory_model.pkl</strong>.
+          <strong style={{ color: "#FF5A1F" }}>best_pm_model.pkl</strong> and{" "}
+          <strong style={{ color: "#FF7B47" }}>factory_model.pkl</strong>.
         </p>
 
         {/* Quick Presets */}
@@ -356,7 +356,7 @@ export default function MlWorkbench() {
             <div className="slider-item">
               <div className="slider-header">
                 <span>⏳ Tool Wear:</span>
-                <strong style={{ color: toolWearMin > 180 ? "#ef4444" : "#e2e8f0" }}>{toolWearMin} min</strong>
+                <strong style={{ color: toolWearMin > 180 ? "#ef4444" : "#0F0F0E" }}>{toolWearMin} min</strong>
               </div>
               <input
                 type="range"

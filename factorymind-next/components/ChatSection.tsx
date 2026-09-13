@@ -136,7 +136,7 @@ export default function ChatSection() {
         // Strip out bullet symbol
         const cleanContent = typeof content === "string" ? content.replace(/^[-•*]\s*/, "") : content;
         return (
-          <li key={idx} style={{ marginLeft: "16px", marginBottom: "4px", listStyleType: "disc", color: "#cbd5e1", lineHeight: "1.5", fontSize: "13px" }}>
+          <li key={idx} style={{ marginLeft: "16px", marginBottom: "4px", listStyleType: "disc", color: "#3A3630", lineHeight: "1.5", fontSize: "13px" }}>
             {cleanContent}
           </li>
         );
@@ -145,7 +145,7 @@ export default function ChatSection() {
       // Warning paragraph card formatting
       if (isWarning) {
         return (
-          <div key={idx} style={{ background: "rgba(248, 113, 113, 0.08)", borderLeft: "3px solid #F87171", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#fca5a5" }}>
+          <div key={idx} style={{ background: "rgba(178, 58, 58, 0.08)", borderLeft: "3px solid #B23A3A", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#7A2626" }}>
             {content}
           </div>
         );
@@ -154,7 +154,7 @@ export default function ChatSection() {
       // Action/Preventive section card formatting
       if (isAction) {
         return (
-          <div key={idx} style={{ background: "rgba(167, 139, 250, 0.08)", borderLeft: "3px solid #A78BFA", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#C4B5FD" }}>
+          <div key={idx} style={{ background: "rgba(255, 90, 31, 0.08)", borderLeft: "3px solid #FF5A1F", padding: "8px 12px", borderRadius: "0 8px 8px 0", margin: "8px 0", fontSize: "13px", color: "#FF7B47" }}>
             {content}
           </div>
         );
@@ -163,7 +163,7 @@ export default function ChatSection() {
       if (!line.trim()) return <div key={idx} style={{ height: "6px" }} />;
 
       return (
-        <p key={idx} style={{ margin: "0 0 6px 0", lineHeight: "1.55", fontSize: "13px", color: "#cbd5e1" }}>
+        <p key={idx} style={{ margin: "0 0 6px 0", lineHeight: "1.55", fontSize: "13px", color: "#3A3630" }}>
           {content}
         </p>
       );
@@ -209,7 +209,7 @@ export default function ChatSection() {
                 <span className="chat-loading-dot" />
                 <span className="chat-loading-dot" />
                 <span className="chat-loading-dot" />
-                <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "10px" }}>
+                <span style={{ fontSize: "11px", color: "#7A7770", marginLeft: "10px" }}>
                   FactoryMind AI is formulating precaution guidance...
                 </span>
               </div>

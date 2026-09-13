@@ -145,15 +145,15 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
             gap: 10,
             margin: "8px 12px 4px 12px",
             padding: "10px 12px",
-            background: "linear-gradient(90deg, rgba(167,139,250,0.18), rgba(56,189,248,0.12))",
-            border: "1px solid rgba(167,139,250,0.45)",
+            background: "linear-gradient(90deg, rgba(255, 90, 31,0.18), rgba(56,189,248,0.12))",
+            border: "1px solid rgba(255, 90, 31,0.45)",
             borderRadius: 8,
-            color: "#A78BFA",
+            color: "#FF5A1F",
             textDecoration: "none",
             fontSize: 12,
             fontWeight: 700,
             letterSpacing: "0.05em",
-            boxShadow: "0 0 18px rgba(167,139,250,0.15)",
+            boxShadow: "0 0 18px rgba(255, 90, 31,0.15)",
           }}
           title="Open live factory simulation"
         >
@@ -163,9 +163,9 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
             style={{
               fontSize: 8,
               padding: "2px 5px",
-              background: "#4ADE8033",
-              color: "#4ADE80",
-              border: "1px solid #4ADE8066",
+              background: "#3F7A5F33",
+              color: "#3F7A5F",
+              border: "1px solid #3F7A5F66",
               borderRadius: 3,
               letterSpacing: "0.1em",
             }}

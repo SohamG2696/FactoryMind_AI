@@ -4,54 +4,54 @@
 ====================================================== */
 
 :root {
-  /* Color Palette */
-  --bg-main: #080914;
-  --bg-secondary: #0D0E1A;
-  --bg-card: #11121F;
-  --bg-card-hover: #17182A;
-  --bg-card-elevated: #1B1D30;
-  
-  --border-subtle: #27283A;
-  --border-focus: #3F415E;
-  --border-accent: rgba(167, 139, 250, 0.35);
+  /* ═════ UralMebel-inspired warm editorial palette ═════ */
+  --bg-main:            #F0EBE0;   /* warm cream canvas */
+  --bg-secondary:       #E8E1D1;   /* dust beige */
+  --bg-card:            #FBF7F0;   /* off-white surface */
+  --bg-card-hover:      #FFFFFF;
+  --bg-card-elevated:   #FFFFFF;
 
-  /* Brand Accents (Purple / Lavender) */
-  --primary: #A78BFA;
-  --primary-light: #C4B5FD;
-  --primary-dark: #7C3AED;
-  --primary-glow: rgba(167, 139, 250, 0.20);
-  --primary-glow-strong: rgba(167, 139, 250, 0.35);
+  --border-subtle: #D9D2C4;
+  --border-focus:  #B8AE9B;
+  --border-accent: rgba(255, 90, 31, 0.35);
 
-  /* Typography Colors */
-  --text-main: #F5F3FF;
-  --text-secondary: #A1A1B5;
-  --text-muted: #6F7085;
-  --text-inverse: #080914;
+  /* Brand Accent (UralMebel orange) */
+  --primary:            #FF5A1F;
+  --primary-light:      #FF7B47;
+  --primary-dark:       #E64A0F;
+  --primary-glow:       rgba(255, 90, 31, 0.18);
+  --primary-glow-strong:rgba(255, 90, 31, 0.34);
 
-  /* Functional Status Colors */
-  --success: #4ADE80;
-  --success-glow: rgba(74, 222, 128, 0.20);
-  --warning: #FACC15;
-  --warning-glow: rgba(250, 204, 21, 0.20);
-  --danger: #F87171;
-  --danger-glow: rgba(248, 113, 113, 0.20);
-  --info: #60A5FA;
-  --info-glow: rgba(96, 165, 250, 0.20);
+  /* Ink */
+  --text-main:      #0F0F0E;
+  --text-secondary: #3A3630;
+  --text-muted:     #7A7770;
+  --text-inverse:   #FBF7F0;
+
+  /* Status */
+  --success:     #3F7A5F;   /* muted forest */
+  --success-glow: rgba(63, 122, 95, 0.18);
+  --warning:     #C87D1F;   /* deep amber */
+  --warning-glow: rgba(200, 125, 31, 0.18);
+  --danger:      #B23A3A;   /* rust red */
+  --danger-glow: rgba(178, 58, 58, 0.20);
+  --info:        #4A6D8C;   /* dusty blue */
+  --info-glow:   rgba(74, 109, 140, 0.16);
 
   /* Typography */
   --font-main: 'Inter', 'Manrope', 'Outfit', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Radii & Shadows */
+  /* Radii & Shadows (softer for light theme) */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.65);
+  --shadow-sm: 0 2px 8px rgba(60, 50, 30, 0.06);
+  --shadow-md: 0 8px 24px rgba(60, 50, 30, 0.10);
+  --shadow-lg: 0 20px 50px rgba(60, 50, 30, 0.14);
   --shadow-glow: 0 0 20px var(--primary-glow);
 }
 
@@ -92,12 +92,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27283A;
+  background: var(--border-subtle);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3F415E;
+  background: var(--border-focus);
 }
 
 /* ===============================
@@ -109,10 +109,10 @@ body {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(circle at 50% 0%, rgba(167, 139, 250, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 90% 80%, rgba(96, 165, 250, 0.04) 0%, transparent 50%),
-    linear-gradient(rgba(39, 40, 58, 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(39, 40, 58, 0.35) 1px, transparent 1px);
+    radial-gradient(circle at 50% 0%, rgba(255, 90, 31, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 90% 80%, rgba(200, 125, 31, 0.04) 0%, transparent 50%),
+    linear-gradient(rgba(139, 128, 108, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 128, 108, 0.10) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
   pointer-events: none;
 }
@@ -121,7 +121,7 @@ body {
 .db-entry-overlay {
   position: fixed;
   inset: 0;
-  background: #080914;
+  background: var(--bg-main);
   z-index: 99999;
   pointer-events: none;
   opacity: 1;
@@ -165,7 +165,7 @@ body {
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 9, 20, 0.75);
+  background: rgba(251, 247, 240, 0.85);
   backdrop-filter: blur(8px);
   z-index: 998;
   display: none;
@@ -197,7 +197,7 @@ body {
   flex-direction: column;
   z-index: 1000;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 4px 0 24px rgba(60, 50, 30, 0.10);
 }
 
 .sidebar-visible .sidebar {
@@ -1937,7 +1937,7 @@ body {
 .dt-inspector-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 9, 20, 0.85);
+  background: rgba(251, 247, 240, 0.92);
   backdrop-filter: blur(12px);
   z-index: 10000;
   display: flex;
@@ -3158,19 +3158,19 @@ tbody tr:hover {
 .alert.critical {
   background: rgba(248, 113, 113, 0.08);
   border-color: rgba(248, 113, 113, 0.25);
-  color: #fca5a5;
+  color: #7A2626;
 }
 
 .alert.warning {
   background: rgba(250, 204, 21, 0.08);
   border-color: rgba(250, 204, 21, 0.25);
-  color: #fde047;
+  color: #7C4E12;
 }
 
 .alert.success {
   background: rgba(74, 222, 128, 0.08);
   border-color: rgba(74, 222, 128, 0.25);
-  color: #86efac;
+  color: #274E3A;
 }
 
 .alert h4 {
@@ -3359,7 +3359,7 @@ tbody tr:hover {
 .save-success-banner {
   background: rgba(74, 222, 128, 0.12);
   border: 1px solid rgba(74, 222, 128, 0.3);
-  color: #86efac;
+  color: #274E3A;
   padding: 10px 16px;
   border-radius: var(--radius-md);
   font-size: 12.5px;
@@ -3507,7 +3507,7 @@ tbody tr:hover {
 .google-auth-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 9, 20, 0.85);
+  background: rgba(251, 247, 240, 0.92);
   backdrop-filter: blur(12px);
   z-index: 99999;
   display: flex;
@@ -3565,7 +3565,7 @@ tbody tr:hover {
 .google-error-alert {
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.3);
-  color: #fca5a5;
+  color: #7A2626;
   padding: 8px 14px;
   border-radius: var(--radius-md);
   font-size: 12px;
@@ -3811,7 +3811,7 @@ tbody tr:hover {
   border: 1px solid rgba(250, 204, 21, 0.25);
   border-radius: var(--radius-md);
   font-size: 11px;
-  color: #fde047;
+  color: #7C4E12;
 }
 
 .google-auth-actions-row {
@@ -3931,7 +3931,7 @@ tbody tr:hover {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(17, 18, 31, 0.85);
+  background: rgba(251, 247, 240, 0.92);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   padding: 6px 12px;
@@ -3981,7 +3981,7 @@ tbody tr:hover {
 .lp-content-card {
   max-width: 680px;
   text-align: center;
-  background: rgba(17, 18, 31, 0.75);
+  background: rgba(251, 247, 240, 0.85);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
@@ -4397,13 +4397,13 @@ footer {
   justify-content: space-between;
   align-items: center;
   padding: 12px 28px;
-  background: rgba(13, 14, 26, 0.85);
+  background: rgba(251, 247, 240, 0.92);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
   z-index: 100;
   backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(60, 50, 30, 0.10);
 }
 
 .sim-topbar-brand {
@@ -4499,7 +4499,7 @@ footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, rgba(17, 18, 31, 0.95), rgba(13, 14, 26, 0.9));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 235, 224, 0.95));
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: 20px 24px;
@@ -4721,7 +4721,7 @@ footer {
   transform: translateY(-2px);
   border-color: var(--border-focus);
   background: var(--bg-card-hover);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 30px rgba(60, 50, 30, 0.12);
 }
 
 .sim-cell-card.status-healthy {
@@ -4758,7 +4758,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: rgba(8, 9, 20, 0.7);
+  background: rgba(232, 225, 209, 0.7);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -4814,7 +4814,7 @@ footer {
 
 .sim-svg-viewport {
   height: 145px;
-  background: radial-gradient(circle at center, rgba(17, 18, 31, 0.8), rgba(8, 9, 20, 0.95));
+  background: radial-gradient(circle at center, rgba(251, 247, 240, 0.9), rgba(232, 225, 209, 0.9));
   position: relative;
   cursor: pointer;
   border-bottom: 1px solid var(--border-subtle);
@@ -4842,7 +4842,7 @@ footer {
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   padding: 8px 10px;
-  background: rgba(8, 9, 20, 0.4);
+  background: rgba(232, 225, 209, 0.55);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -5013,7 +5013,7 @@ footer {
   background: rgba(248, 113, 113, 0.05);
 }
 .sim-log-item.crit .sim-log-msg {
-  color: #fca5a5;
+  color: #7A2626;
 }
 
 .sim-log-item.warn {
@@ -5021,7 +5021,7 @@ footer {
   background: rgba(250, 204, 21, 0.05);
 }
 .sim-log-item.warn .sim-log-msg {
-  color: #fde047;
+  color: #7C4E12;
 }
 
 .sim-log-item.ok {
@@ -5029,7 +5029,7 @@ footer {
   background: rgba(74, 222, 128, 0.05);
 }
 .sim-log-item.ok .sim-log-msg {
-  color: #86efac;
+  color: #274E3A;
 }
 
 .sim-log-item.info {
@@ -5041,7 +5041,7 @@ footer {
 .sim-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(8, 9, 20, 0.85);
+  background: rgba(251, 247, 240, 0.92);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -5090,7 +5090,7 @@ footer {
 
 .sim-modal-svg-wrap {
   height: 220px;
-  background: radial-gradient(circle at center, rgba(17, 18, 31, 0.9), rgba(8, 9, 20, 0.98));
+  background: radial-gradient(circle at center, rgba(251, 247, 240, 0.95), rgba(232, 225, 209, 0.95));
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
   margin-bottom: 16px;
@@ -5162,4 +5162,804 @@ footer {
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+/* ================================================================
+   Warm theme now lives at :root — the following block only carries
+   sim-page specific TWEAKS that the class overrides below need.
+================================================================ */
+
+.sim-page-wrapper {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-main);
+}
+
+/* Override hardcoded dark backgrounds baked into the existing sim rules */
+.sim-page-wrapper .sim-topbar {
+  background: rgba(251, 247, 240, 0.92);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 0 var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-topbar-center {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-hub-banner {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5F0E3 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.sim-page-wrapper .sim-hub-banner::before {
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
+.sim-page-wrapper .sim-banner-heading span.highlight {
+  background: linear-gradient(135deg, #FF7B47, #E64A0F);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sim-page-wrapper .sim-banner-tag {
+  background: rgba(255, 90, 31, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(255, 90, 31, 0.28);
+}
+
+.sim-page-wrapper .sim-cell-card {
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.sim-page-wrapper .sim-cell-card:hover {
+  background: var(--bg-card-hover);
+  box-shadow: 0 12px 28px rgba(60, 50, 30, 0.10);
+}
+
+.sim-page-wrapper .sim-cell-header {
+  background: rgba(240, 235, 224, 0.65);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-cell-title {
+  color: var(--text-main);
+}
+
+.sim-page-wrapper .sim-svg-viewport {
+  background: linear-gradient(180deg, #FBF7F0 0%, #E8E1D1 100%);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-telemetry-strip {
+  background: rgba(240, 235, 224, 0.55);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-telemetry-item {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-progress-track {
+  background: #E8E1D1;
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-status-pill.healthy {
+  background: rgba(63, 122, 95, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(63, 122, 95, 0.4);
+}
+.sim-page-wrapper .sim-status-pill.warning {
+  background: rgba(200, 125, 31, 0.14);
+  color: var(--warning);
+  border: 1px solid rgba(200, 125, 31, 0.4);
+}
+.sim-page-wrapper .sim-status-pill.critical {
+  background: rgba(178, 58, 58, 0.14);
+  color: var(--danger);
+  border: 1px solid rgba(178, 58, 58, 0.42);
+}
+.sim-page-wrapper .sim-status-pill.downtime {
+  background: rgba(139, 139, 133, 0.14);
+  color: var(--text-muted);
+  border: 1px solid rgba(139, 139, 133, 0.32);
+}
+
+.sim-page-wrapper .sim-cell-card.status-healthy   { border-color: rgba(63, 122, 95, 0.4); }
+.sim-page-wrapper .sim-cell-card.status-warning   { border-color: rgba(200, 125, 31, 0.45); }
+.sim-page-wrapper .sim-cell-card.status-critical  { border-color: rgba(178, 58, 58, 0.5); }
+.sim-page-wrapper .sim-cell-card.status-downtime  { border-color: rgba(139, 139, 133, 0.35); }
+
+.sim-page-wrapper .sim-btn {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sim-page-wrapper .sim-btn:hover {
+  background: #F5F0E3;
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+.sim-page-wrapper .sim-btn.play-state {
+  background: rgba(63, 122, 95, 0.1);
+  border-color: rgba(63, 122, 95, 0.35);
+  color: var(--success);
+}
+.sim-page-wrapper .sim-btn.pause-state {
+  background: rgba(200, 125, 31, 0.1);
+  border-color: rgba(200, 125, 31, 0.35);
+  color: var(--warning);
+}
+.sim-page-wrapper .sim-btn.speed-btn.active {
+  background: rgba(255, 90, 31, 0.14);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+.sim-page-wrapper .sim-btn.danger-btn {
+  background: rgba(178, 58, 58, 0.1);
+  border-color: rgba(178, 58, 58, 0.35);
+  color: var(--danger);
+}
+.sim-page-wrapper .sim-controls-toolbar {
+  background: #FBF7F0;
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-action-btn.wear {
+  background: rgba(200, 125, 31, 0.08);
+  border-color: rgba(200, 125, 31, 0.32);
+  color: var(--warning);
+}
+.sim-page-wrapper .sim-action-btn.heat {
+  background: rgba(178, 58, 58, 0.08);
+  border-color: rgba(178, 58, 58, 0.32);
+  color: var(--danger);
+}
+.sim-page-wrapper .sim-action-btn.fix {
+  background: rgba(74, 109, 140, 0.08);
+  border-color: rgba(74, 109, 140, 0.32);
+  color: var(--info);
+}
+
+.sim-page-wrapper .sim-fault-badge {
+  background: rgba(178, 58, 58, 0.14);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  box-shadow: none;
+}
+
+.sim-page-wrapper .sim-flow-chain {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  color: var(--primary-dark);
+}
+
+.sim-page-wrapper .sim-floor-card,
+.sim-page-wrapper .sim-scada-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.sim-page-wrapper .sim-log-item {
+  background: #FBF7F0;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sim-page-wrapper .sim-log-item:hover {
+  background: #FFFFFF;
+}
+.sim-page-wrapper .sim-log-item.crit {
+  background: rgba(178, 58, 58, 0.06);
+  border-left: 3px solid var(--danger);
+}
+.sim-page-wrapper .sim-log-item.crit .sim-log-msg { color: #7A2626; }
+.sim-page-wrapper .sim-log-item.warn {
+  background: rgba(200, 125, 31, 0.06);
+  border-left: 3px solid var(--warning);
+}
+.sim-page-wrapper .sim-log-item.warn .sim-log-msg { color: #7C4E12; }
+.sim-page-wrapper .sim-log-item.ok {
+  background: rgba(63, 122, 95, 0.06);
+  border-left: 3px solid var(--success);
+}
+.sim-page-wrapper .sim-log-item.ok .sim-log-msg { color: #274E3A; }
+.sim-page-wrapper .sim-log-item.info {
+  background: rgba(74, 109, 140, 0.06);
+  border-left: 3px solid var(--info);
+}
+
+.sim-page-wrapper .sim-modal-backdrop {
+  background: rgba(40, 32, 20, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.sim-page-wrapper .sim-modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+}
+
+.sim-page-wrapper .sim-modal-svg-wrap {
+  background: linear-gradient(180deg, #FBF7F0 0%, #E8E1D1 100%);
+  border: 1px solid var(--border-subtle);
+}
+
+.sim-page-wrapper .sim-modal-close-btn {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sim-page-wrapper .sim-modal-close-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.sim-page-wrapper .sim-chart-card,
+.sim-page-wrapper .sim-ai-inference-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+}
+.sim-page-wrapper .sim-ai-inference-card {
+  border-color: rgba(255, 90, 31, 0.35);
+}
+.sim-page-wrapper .sim-ai-inference-title {
+  color: var(--primary-dark);
+}
+
+/* Nav buttons */
+.sim-page-wrapper .sim-nav-btn.primary {
+  background: rgba(255, 90, 31, 0.10);
+  border: 1px solid rgba(255, 90, 31, 0.35);
+  color: var(--primary-dark);
+}
+.sim-page-wrapper .sim-nav-btn.primary:hover {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(255, 90, 31, 0.28);
+  transform: translateY(-1px);
+}
+.sim-page-wrapper .sim-nav-btn.secondary {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.sim-page-wrapper .sim-nav-btn.secondary:hover {
+  background: #F5F0E3;
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+
+/* Grid is already warm at :root — just soften it under the sim page */
+.sim-page-wrapper .background-grid {
+  opacity: 0.6;
+}
+
+/* NEW: KPI strip & cards (used by refactored FactorySimulation) */
+.sim-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .sim-kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.sim-kpi-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg, 10px);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.sim-kpi-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 90, 31, 0.06), transparent 70%);
+  pointer-events: none;
+}
+
+.sim-kpi-label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.sim-kpi-val {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Flow overlay positioned over the machine matrix */
+.sim-flow-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* =================================================================
+   Reference-layout additions: clock, mini-KPIs, tabs, floor, flow strip
+================================================================= */
+
+.sim-hub-banner {
+  gap: 20px;
+}
+
+.sim-hero-clock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 10px 16px;
+  box-shadow: var(--shadow-sm);
+  min-width: 240px;
+}
+.sim-hero-clock-icon {
+  color: var(--primary);
+  font-size: 22px;
+}
+.sim-hero-clock-label {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.sim-hero-clock-value {
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 800;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.sim-hero-clock-value span {
+  color: var(--primary-dark);
+  font-family: var(--font-mono);
+  font-weight: 900;
+}
+
+/* 5-KPI mini strip */
+.sim-kpi-mini {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1200px) {
+  .sim-kpi-mini { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+  .sim-kpi-mini { grid-template-columns: repeat(2, 1fr); }
+}
+
+.sim-kpi-mini-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 8px;
+  align-items: center;
+  min-height: 78px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.sim-kpi-mini-card:hover {
+  box-shadow: 0 10px 24px rgba(60, 50, 30, 0.10);
+  transform: translateY(-1px);
+}
+
+.sim-kpi-mini-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sim-kpi-mini-icon {
+  color: var(--primary);
+  font-size: 12px;
+}
+.sim-kpi-mini-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.sim-kpi-mini-body {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sim-kpi-mini-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.sim-kpi-mini-delta {
+  font-size: 10.5px;
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(63, 122, 95, 0.10);
+  border: 1px solid rgba(63, 122, 95, 0.28);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.sim-kpi-mini-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.sim-kpi-mini-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.sim-kpi-mini-chart {
+  width: 90px;
+  height: 40px;
+  align-self: end;
+}
+
+/* SCADA tabs */
+.sim-scada-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+}
+.sim-scada-tab {
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-main);
+}
+.sim-scada-tab:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.6); }
+.sim-scada-tab.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 10px rgba(255, 90, 31, 0.28);
+}
+
+/* Rich SCADA log rows */
+.sim-log-item.rich {
+  display: grid;
+  grid-template-columns: 54px 20px 1fr;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+}
+.sim-log-icon {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-secondary);
+  padding-top: 1px;
+}
+.sim-log-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sim-log-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--font-main);
+  letter-spacing: -0.005em;
+}
+.sim-log-item.rich .sim-log-msg {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-main);
+}
+
+/* Floor viewport (contains the SVG + overlaid controls) */
+.sim-floor-viewport {
+  position: relative;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.sim-floor-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+.sim-floor-controls button {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: #FFFFFF;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+.sim-floor-controls button:hover {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+
+.sim-floor-legend {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  z-index: 10;
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(4px);
+}
+.sim-floor-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sim-floor-legend i {
+  display: inline-block;
+  width: 18px;
+  height: 6px;
+  border-radius: 2px;
+}
+.sim-floor-legend .legend-arrow { background: #FF6B2C; height: 3px; }
+.sim-floor-legend .legend-dashed {
+  background: repeating-linear-gradient(90deg, #4A9FE7 0 4px, transparent 4px 8px);
+  height: 3px;
+}
+.sim-floor-legend .legend-wood { background: #B08A5C; }
+.sim-floor-legend .legend-agv  { background: #FF6B2C; border: 1px solid #1A1815; height: 10px; width: 12px; }
+
+/* Production flow strip */
+.sim-flow-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 20px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+}
+@media (max-width: 1200px) {
+  .sim-flow-strip { grid-template-columns: 1fr; }
+}
+.sim-flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sim-flow-steps-label {
+  font-size: 11px;
+  color: var(--text-main);
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  font-family: var(--font-mono);
+}
+.sim-flow-steps-label span {
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.sim-flow-steps-row {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.sim-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+  flex-shrink: 0;
+  position: relative;
+}
+.sim-flow-step-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+.sim-flow-step.done .sim-flow-step-circle {
+  background: var(--success);
+  border-color: var(--success);
+  color: #FFFFFF;
+}
+.sim-flow-step.active .sim-flow-step-circle {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.18);
+}
+.sim-flow-step-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.sim-flow-step-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.sim-flow-step-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.sim-flow-step-connector {
+  width: 22px;
+  height: 2px;
+  background: var(--border-subtle);
+  margin-left: 6px;
+}
+.sim-flow-step-connector.done { background: var(--success); }
+.sim-flow-step.active .sim-flow-step-title { color: var(--primary-dark); }
+
+/* Right-side meta grid */
+.sim-flow-meta {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .sim-flow-meta { grid-template-columns: repeat(3, 1fr); }
+}
+.sim-flow-meta-cell {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.sim-flow-meta-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.sim-flow-meta-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sim-flow-meta-value {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.sim-flow-meta-value-row {
+  min-width: 0;
+}
+.sim-flow-meta-sub {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+.sim-flow-meta-bar {
+  margin-top: 4px;
+  height: 4px;
+  background: #FFFFFF;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+}
+.sim-flow-meta-bar-fill {
+  height: 100%;
+  transition: width 0.35s ease, background-color 0.25s ease;
+}
+
+/* Give the sim main container a bit more vertical breathing room for the new layout */
+.sim-main-container {
+  gap: 18px;
+}
+
+/* Tweak the grid layout so floor gets more room */
+.sim-grid-layout {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+}
+@media (max-width: 1400px) {
+  .sim-grid-layout { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+
+/* Cap the SCADA panel to match the floor's typical rendered height */
+.sim-scada-panel {
+  max-height: 520px;
+}
+
 
