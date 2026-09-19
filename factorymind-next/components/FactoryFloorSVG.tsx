@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { MachineState, AGV, CurrentPart } from "@/hooks/useFactorySim";
+import { MachineState, AGV, CurrentPart, ActiveWorker } from "@/hooks/useFactorySim";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faMinus, faExpand, faCompress } from "@fortawesome/free-solid-svg-icons";
+
+export type FloorLayer = "floor" | "material" | "agv" | "workforce" | "ai" | "health";
 
 /*
   Full 1200 × 640 factory floor illustration.
@@ -39,6 +41,9 @@ interface Props {
   machines: MachineState[];
   agvs: AGV[];
   currentPart: CurrentPart;
+  activeWorkers?: ActiveWorker[];
+  aiHighlightedMachines?: string[];
+  layer?: FloorLayer;
   onInspect: (id: string) => void;
 }
 
@@ -449,9 +454,49 @@ function MachineStatusLabel({ m }: { m: MachineState }) {
 }
 
 /* ────────── The floor container with grid, arrows, machines, agvs ────────── */
-export default function FactoryFloorSVG({ machines, agvs, currentPart, onInspect }: Props) {
+/* ────────── Human intervention worker glyph ────────── */
+function ActiveWorkerGlyph({ w }: { w: ActiveWorker }) {
+  const color =
+    w.status === "moving" ? "#FF6B2C" :
+    w.status === "on_task" ? "#B23A3A" :
+    "#3F7A5F";
+  const label = w.status === "moving" ? "Moving" : w.status === "on_task" ? "Repairing" : "Verifying";
+  const pct = Math.round(w.progress * 100);
+  return (
+    <g transform={`translate(${w.x}, ${w.y})`} style={{ transition: "transform 0.5s linear" }}>
+      {/* Halo */}
+      <circle r="20" fill={color} opacity="0.15">
+        <animate attributeName="r" values="18;24;18" dur="1.4s" repeatCount="indefinite" />
+      </circle>
+      {/* Body */}
+      <circle r="9" fill={color} stroke="#1A1815" strokeWidth="1.4" />
+      {/* Head */}
+      <circle cy="-4" r="4" fill="#F5F0E3" stroke="#1A1815" strokeWidth="0.8" />
+      {/* Tool icon */}
+      <path d="M -3 3 L 3 3 M 0 0 L 0 6" stroke="#1A1815" strokeWidth="1.4" strokeLinecap="round" />
+      {/* Label pill above */}
+      <g transform="translate(0, -26)">
+        <rect x="-40" y="-14" width="80" height="14" rx="7" fill="#1A1815" opacity="0.92" />
+        <text x="0" y="-4" textAnchor="middle" fill="#F5F0E3" fontSize="7" fontFamily="monospace" fontWeight="800">
+          {w.id} · {label} {w.status !== "moving" ? `${pct}%` : ""}
+        </text>
+      </g>
+      {/* Progress bar under */}
+      <g transform="translate(-18, 16)">
+        <rect width="36" height="4" rx="2" fill="#D9D2C4" />
+        <rect width={36 * w.progress} height="4" rx="2" fill={color} />
+      </g>
+    </g>
+  );
+}
+
+export default function FactoryFloorSVG({
+  machines, agvs, currentPart, activeWorkers = [], aiHighlightedMachines = [],
+  layer = "floor", onInspect,
+}: Props) {
   const [zoom, setZoom] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
+  const highlightSet = new Set(aiHighlightedMachines);
 
   const byId = new Map(machines.map((m) => [m.id, m]));
   const wh = byId.get("warehouse")!;
@@ -537,44 +582,63 @@ export default function FactoryFloorSVG({ machines, agvs, currentPart, onInspect
         {/* Raw material pallets on far left */}
         <RawMaterialsGlyph />
 
-        {/* Material flow arrows (draw first — behind machines) */}
-        <g>
-          {flowArrows.map((f, i) => {
-            if (f.curve) {
+        {/* Layer: AI Actions — pulsing halo around each affected machine */}
+        {layer === "ai" && machines.filter((m) => highlightSet.has(m.code)).map((m) => (
+          <circle key={`aih-${m.id}`} cx={m.x} cy={m.y} r="120" fill="none" stroke={ORANGE} strokeWidth="3" opacity="0.55">
+            <animate attributeName="r" values="100;140;100" dur="1.6s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.7;0.15;0.7" dur="1.6s" repeatCount="indefinite" />
+          </circle>
+        ))}
+
+        {/* Layer: Machine Health — big colored disc under each machine */}
+        {layer === "health" && machines.map((m) => (
+          <circle
+            key={`hh-${m.id}`}
+            cx={m.x}
+            cy={m.y}
+            r="130"
+            fill={STATUS_DOT[m.status]}
+            opacity="0.14"
+          />
+        ))}
+
+        {/* Material flow arrows — visible on floor + material layers */}
+        {(layer === "floor" || layer === "material") && (
+          <g opacity={layer === "material" ? 1 : 0.7}>
+            {flowArrows.map((f, i) => {
+              if (f.curve) {
+                return (
+                  <path
+                    key={i}
+                    d={`M ${f.from.x} ${f.from.y} Q ${(f.from.x + f.to.x) / 2 + 40} ${(f.from.y + f.to.y) / 2} ${f.to.x} ${f.to.y}`}
+                    stroke={ORANGE}
+                    strokeWidth={layer === "material" ? "3.5" : "2.5"}
+                    fill="none"
+                    markerEnd="url(#mflow-arrow)"
+                  />
+                );
+              }
               return (
-                <path
+                <line
                   key={i}
-                  d={`M ${f.from.x} ${f.from.y} Q ${(f.from.x + f.to.x) / 2 + 40} ${(f.from.y + f.to.y) / 2} ${f.to.x} ${f.to.y}`}
+                  x1={f.from.x} y1={f.from.y} x2={f.to.x} y2={f.to.y}
                   stroke={ORANGE}
-                  strokeWidth="2.5"
-                  fill="none"
-                  opacity="0.7"
+                  strokeWidth={layer === "material" ? "3.5" : "2.5"}
                   markerEnd="url(#mflow-arrow)"
                 />
               );
-            }
-            return (
-              <line
-                key={i}
-                x1={f.from.x}
-                y1={f.from.y}
-                x2={f.to.x}
-                y2={f.to.y}
-                stroke={ORANGE}
-                strokeWidth="2.5"
-                opacity="0.7"
-                markerEnd="url(#mflow-arrow)"
-              />
-            );
-          })}
-        </g>
+            })}
+          </g>
+        )}
 
-        {/* AGV routes (dashed blue) — behind AGVs */}
-        <g opacity="0.55">
-          <line x1={wh.x} y1={wh.y} x2={cnc1.x} y2={cnc1.y} stroke={AGV_ROUTE} strokeWidth="1.8" strokeDasharray="6 5" />
-          <line x1={robot.x} y1={robot.y} x2={cnc7.x} y2={cnc7.y} stroke={AGV_ROUTE} strokeWidth="1.8" strokeDasharray="6 5" />
-          <line x1={conveyor.x} y1={conveyor.y} x2="1050" y2="480" stroke={AGV_ROUTE} strokeWidth="1.8" strokeDasharray="6 5" />
-        </g>
+        {/* AGV routes — dim on floor, prominent on agv layer */}
+        {(layer === "floor" || layer === "agv") && (
+          <g opacity={layer === "agv" ? 1 : 0.45}>
+            <line x1={wh.x} y1={wh.y} x2={cnc1.x} y2={cnc1.y} stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
+            <line x1={robot.x} y1={robot.y} x2={cnc7.x} y2={cnc7.y} stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
+            <line x1={conveyor.x} y1={conveyor.y} x2="1050" y2="480" stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
+          </g>
+        )}
 
         {/* Finished goods */}
         <FinishedGoodsGlyph count={totalProduced} />
@@ -587,15 +651,27 @@ export default function FactoryFloorSVG({ machines, agvs, currentPart, onInspect
         <PressGlyph m={press} onClick={() => onInspect(press.id)} />
         <ConveyorGlyph m={conveyor} onClick={() => onInspect(conveyor.id)} />
 
-        {/* Machine status labels (below each glyph) */}
-        {machines.map((m) => (
-          <MachineStatusLabel key={m.id} m={m} />
-        ))}
+        {/* Machine status labels (below each glyph) — dimmed on non-floor layers */}
+        <g opacity={layer === "floor" || layer === "health" ? 1 : 0.45}>
+          {machines.map((m) => (
+            <MachineStatusLabel key={m.id} m={m} />
+          ))}
+        </g>
 
-        {/* AGVs */}
-        {agvs.map((a) => (
-          <AGVGlyph key={a.id} agv={a} />
-        ))}
+        {/* AGVs — always visible, brighter on agv layer */}
+        <g opacity={layer === "workforce" ? 0.4 : 1}>
+          {agvs.map((a) => (
+            <AGVGlyph key={a.id} agv={a} />
+          ))}
+        </g>
+
+        {/* Active workers — always visible (they only exist when on a mission);
+            emphasized on workforce layer */}
+        <g opacity={layer === "floor" || layer === "workforce" || layer === "ai" ? 1 : 0.65}>
+          {activeWorkers.map((w) => (
+            <ActiveWorkerGlyph key={w.id} w={w} />
+          ))}
+        </g>
 
         {/* Current-part badge (floating on floor near cnc7 - active station area) */}
         <g transform="translate(30, 30)">

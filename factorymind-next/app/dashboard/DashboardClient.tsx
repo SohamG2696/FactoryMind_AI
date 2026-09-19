@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import DashboardNav from "@/components/DashboardNav";
 import AuthModal from "@/components/AuthModal";
+import InboxDrawer from "@/components/InboxDrawer";
 
 // Views
 import HeroSection from "@/components/HeroSection";
@@ -220,8 +221,9 @@ export default function DashboardClient() {
   const [chatOpen, setChatOpen] = useState(false);
   const [elevateModalOpen, setElevateModalOpen] = useState(false);
   const [elevateTargetRole, setElevateTargetRole] = useState<UserRole | null>(null);
+  const [inboxOpen, setInboxOpen] = useState(false);
 
-  const { role, canAccessSection } = useAuth();
+  const { user, role, canAccessSection } = useAuth();
 
   useNotifications();
 
@@ -325,6 +327,14 @@ export default function DashboardClient() {
             pageTitle={pageTitles[activeSection]}
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
+            onOpenInbox={() => setInboxOpen(true)}
+          />
+
+          <InboxDrawer
+            open={inboxOpen}
+            onClose={() => setInboxOpen(false)}
+            supervisorId={role === "SUPERVISOR" ? user?.id : undefined}
+            supervisorName={user?.name}
           />
 
           <PageView sectionKey={activeSection}>

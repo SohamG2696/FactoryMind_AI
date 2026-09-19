@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useClock } from "@/hooks/useClock";
 import { useAuth, UserRole, ROLE_PERMISSIONS } from "@/context/AuthContext";
+import { useInbox } from "@/hooks/useInbox";
 import AuthModal from "@/components/AuthModal";
+import FactoryMindLogo from "@/components/FactoryMindLogo";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClock } from "@fortawesome/free-regular-svg-icons";
 import {
@@ -17,7 +20,8 @@ import {
   faCircleCheck,
   faBars,
   faKey,
-  faMagnifyingGlass,
+  faBell,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from "next/navigation";
 
@@ -25,12 +29,16 @@ interface DashboardNavProps {
   pageTitle?: string;
   sidebarOpen?: boolean;
   setSidebarOpen?: (open: boolean) => void;
+  onOpenInbox?: () => void;
 }
 
-export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }: DashboardNavProps) {
+export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen, onOpenInbox }: DashboardNavProps) {
   const time = useClock();
   const router = useRouter();
   const { user, role, logout } = useAuth();
+  // Only supervisors have a routed inbox — poll only for them.
+  const inboxSupervisorId = role === "SUPERVISOR" ? user?.id : undefined;
+  const { unreadCount } = useInbox(inboxSupervisorId, 10000);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [modalTargetRole, setModalTargetRole] = useState<UserRole | null>(null);
@@ -86,6 +94,12 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
               <FontAwesomeIcon icon={faBars} />
             </button>
           )}
+          {/* Compact logo — visible when the sidebar is collapsed */}
+          {!sidebarOpen && (
+            <div className="nav-collapsed-brand">
+              <FactoryMindLogo width={30} height={30} />
+            </div>
+          )}
           <div className="nav-title-block">
             <div className="nav-brand-row">
               <h1>FactoryMind AI</h1>
@@ -93,13 +107,6 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
             </div>
             <p>{pageTitle || "Agentic Digital Twin Platform"}</p>
           </div>
-        </div>
-
-        {/* Search & Digital Twin Live Ticker Banner */}
-        <div className="nav-search-box">
-          <FontAwesomeIcon icon={faMagnifyingGlass} style={{ fontSize: 12 }} />
-          <span>Search anything...</span>
-          <kbd>/</kbd>
         </div>
 
         <div className="nav-twin-ticker">
@@ -124,6 +131,18 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
           <div className="clock">
             <FontAwesomeIcon icon={faClock} className="clock-icon" /> <span id="clock">{time}</span>
           </div>
+
+          {onOpenInbox && role === "SUPERVISOR" && (
+            <button
+              className="nav-bell-btn"
+              onClick={onOpenInbox}
+              title={unreadCount > 0 ? `${unreadCount} unread in your inbox` : "Open inbox"}
+              aria-label="Open supervisor inbox"
+            >
+              <FontAwesomeIcon icon={faBell} />
+              {unreadCount > 0 && <span className="nav-bell-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+            </button>
+          )}
 
           {/* User Profile & Role Dropdown */}
           <div className="profile-container" ref={dropdownRef}>
@@ -211,6 +230,15 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen }:
                 <div className="dropdown-divider" />
 
                 <div className="dropdown-actions">
+                  <Link
+                    href="/profile"
+                    className="dropdown-action-btn"
+                    onClick={() => setDropdownOpen(false)}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <FontAwesomeIcon icon={faUser} />
+                    My Profile · AI Activity
+                  </Link>
                   <button className="dropdown-action-btn" onClick={handleAccountSwitchRequest}>
                     <FontAwesomeIcon icon={faRotate} />
                     Switch Identity / Account

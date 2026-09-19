@@ -4,8 +4,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type MachineKind = "cnc" | "robot" | "conveyor" | "press" | "warehouse";
 export type MachineStatus = "healthy" | "warning" | "critical" | "downtime";
-export type EventCategory = "machine" | "agv" | "flow" | "alert";
+export type EventCategory = "machine" | "agv" | "flow" | "alert" | "ai" | "workforce" | "safety";
 export type AgvStatus = "moving" | "loading" | "unloading" | "idle";
+
+/* v2.0 — active workers on the floor (only present while on a mission) */
+export type ActiveWorkerStatus = "moving" | "on_task" | "verifying";
+export interface ActiveWorker {
+  id: string;               // e.g. "W04"
+  name: string;
+  x: number;                // world coords, animated
+  y: number;
+  targetMachineCode: string;
+  targetX: number;
+  targetY: number;
+  status: ActiveWorkerStatus;
+  missionId?: string;
+  progress: number;         // 0..1 across "moving" then across "on_task"
+  taskTicksTotal: number;   // duration of on_task phase
+  taskTicksLeft: number;
+  arrivedAt?: number;
+}
 
 export interface HistoryPoint {
   t: number;
@@ -104,6 +122,11 @@ export interface SimState {
     wip: number[];
     health: number[];
   };
+  /* v2.0 */
+  activeWorkers: ActiveWorker[];
+  aiHighlightedMachines: string[];   // machine codes touched by AI in last N ticks
+  humanInterventionsCount: number;   // total workers dispatched
+  autonomousActionsCount: number;    // total safe-tier agent actions applied
 }
 
 /* ────────── Chain, part naming, and canonical station coords ────────── */
@@ -266,9 +289,30 @@ function formatWallClock(startTs: number, tick: number, simSecondsPerTick: numbe
   return d.toLocaleTimeString("en-GB", { hour12: false });
 }
 
+/** Sim clock anchor — today at 08:00 local (start of shift A).
+ *  Keeps the SIMULATION TIME chip current instead of frozen at 2026-10-10. */
+function todayShiftStart(): number {
+  const d = new Date();
+  d.setHours(8, 0, 0, 0);
+  return d.getTime();
+}
+
+/* Machine `code` (CELL-01) → machine `id` (cnc1). */
+const CODE_TO_ID: Record<string, string> = {
+  "CELL-01": "cnc1",
+  "CELL-02": "robot",
+  "CELL-03": "conveyor",
+  "CELL-04": "cnc7",
+  "CELL-05": "press",
+  "CELL-06": "warehouse",
+};
+function codeToId(code: string): string {
+  return CODE_TO_ID[code] || code;
+}
+
 export function useFactorySim() {
   const [state, setState] = useState<SimState>(() => {
-    const startTs = new Date("2026-10-10T14:00:00").getTime();
+    const startTs = todayShiftStart();
     const machines = seedMachines();
     const agvs = seedAGVs();
     return {
@@ -288,28 +332,32 @@ export function useFactorySim() {
           category: "machine",
         },
       ],
-      totalProduced: 128,
-      producedDelta: 12,
+      totalProduced: 0,
+      producedDelta: 0,
       totalDowntime: 0,
-      oee: 0.996,
+      oee: 1,
       activeAlerts: 0,
-      wip: 12,
-      throughputPerHour: 18,
-      bottleneckId: "press",
+      wip: 0,
+      throughputPerHour: 0,
+      bottleneckId: null,
       currentPart: {
-        id: "#A784",
+        id: "#A780",
         name: "Gear Housing",
         enteredTick: 0,
-        currentStepIndex: 3,
+        currentStepIndex: 0,
       },
-      partCounter: 784,
+      partCounter: 780,
       cycleTargetMin: 10,
       kpiHistory: {
-        oee: [0.98, 0.985, 0.99, 0.992, 0.994, 0.996],
-        produced: [8, 10, 9, 12, 11, 12],
-        wip: [10, 11, 12, 13, 12, 12],
-        health: [98, 97, 98, 99, 98, 99],
+        oee: [],
+        produced: [],
+        wip: [],
+        health: [],
       },
+      activeWorkers: [],
+      aiHighlightedMachines: [],
+      humanInterventionsCount: 0,
+      autonomousActionsCount: 0,
     };
   });
 
@@ -567,6 +615,66 @@ export function useFactorySim() {
         }
       }
 
+      /* ────── Active worker motion + task progress ────── */
+      next.activeWorkers = next.activeWorkers
+        .map((w) => {
+          const nw = { ...w };
+          const targetM = byId.get(codeToId(nw.targetMachineCode));
+          if (targetM) {
+            nw.targetX = targetM.x;
+            nw.targetY = targetM.y;
+          }
+          if (nw.status === "moving") {
+            nw.progress = Math.min(1, nw.progress + 0.05); // ~20 ticks to arrive
+            nw.x = nw.x + (nw.targetX - nw.x) * 0.12;
+            nw.y = nw.y + (nw.targetY - nw.y) * 0.12;
+            if (nw.progress >= 1) {
+              nw.status = "on_task";
+              nw.progress = 0;
+              nw.arrivedAt = next.tick;
+              pushEvent(next.events, {
+                t: next.tick, wallClock, category: "workforce", kind: "info", icon: "🧰",
+                msg: `${nw.id} ${nw.name} arrived at ${nw.targetMachineCode} — starting repair`,
+              });
+            }
+          } else if (nw.status === "on_task") {
+            nw.taskTicksLeft = Math.max(0, nw.taskTicksLeft - 1);
+            nw.progress = 1 - nw.taskTicksLeft / Math.max(1, nw.taskTicksTotal);
+            // Actively heal the machine during on_task
+            if (targetM) {
+              targetM.temperature += (targetM.ambient - targetM.temperature) * 0.15;
+              targetM.toolWear = Math.max(0, targetM.toolWear - 4);
+              targetM.vibration *= 0.85;
+              targetM.health = clamp(targetM.health + 3, 0, 100);
+              targetM.rpm *= 0.6;
+              targetM.faultTag = "UNDER REPAIR";
+            }
+            if (nw.taskTicksLeft === 0) {
+              nw.status = "verifying";
+              nw.progress = 0;
+              pushEvent(next.events, {
+                t: next.tick, wallClock, category: "workforce", kind: "ok", icon: "🔍",
+                msg: `${nw.id} completed physical repair on ${nw.targetMachineCode} — verifying`,
+              });
+              if (targetM) targetM.faultTag = "VERIFYING";
+            }
+          } else if (nw.status === "verifying") {
+            nw.progress = Math.min(1, nw.progress + 0.15); // ~7 ticks
+            if (targetM && nw.progress >= 1) {
+              targetM.health = clamp(targetM.health + 6, 0, 100);
+              targetM.toolWear = 0;
+              targetM.faultTag = undefined;
+              pushEvent(next.events, {
+                t: next.tick, wallClock, category: "workforce", kind: "ok", icon: "✅",
+                msg: `${nw.id} verified ${nw.targetMachineCode} recovery — health ${targetM.health.toFixed(0)}%`,
+              });
+              return null; // remove worker
+            }
+          }
+          return nw;
+        })
+        .filter((w): w is ActiveWorker => w !== null);
+
       next.totalDowntime = prev.totalDowntime + downCount;
       return next;
     });
@@ -583,7 +691,7 @@ export function useFactorySim() {
   const pause = () => setState((s) => ({ ...s, running: false }));
   const setSpeed = (speed: number) => setState((s) => ({ ...s, speed }));
   const reset = () => {
-    const startTs = new Date("2026-10-10T14:00:00").getTime();
+    const startTs = todayShiftStart();
     setState({
       running: true,
       speed: 1,
@@ -613,6 +721,10 @@ export function useFactorySim() {
       partCounter: 785,
       cycleTargetMin: 10,
       kpiHistory: { oee: [], produced: [], wip: [], health: [] },
+      activeWorkers: [],
+      aiHighlightedMachines: [],
+      humanInterventionsCount: 0,
+      autonomousActionsCount: 0,
     });
   };
 
@@ -661,12 +773,104 @@ export function useFactorySim() {
     });
   };
 
+  /** v2.0 — Workforce Agent dispatches a worker to a machine.
+   *  Worker enters the sim at their zone spawn point, moves to machine,
+   *  performs on_task repair, verifies, then despawns. */
+  const dispatchWorker = useCallback(
+    (opts: {
+      id: string;
+      name: string;
+      targetMachineCode: string;
+      missionId?: string;
+      taskTicks?: number;
+    }) => {
+      setState((s) => {
+        // Prevent duplicate on same target
+        if (s.activeWorkers.some((w) => w.id === opts.id)) return s;
+        const target = s.machines.find((m) => m.id === codeToId(opts.targetMachineCode));
+        if (!target) return s;
+        // Spawn at floor edge closest to the target
+        const spawnX = 40;
+        const spawnY = target.y > 400 ? 570 : 90;
+        const nw: ActiveWorker = {
+          id: opts.id,
+          name: opts.name,
+          x: spawnX,
+          y: spawnY,
+          targetMachineCode: opts.targetMachineCode,
+          targetX: target.x,
+          targetY: target.y,
+          status: "moving",
+          missionId: opts.missionId,
+          progress: 0,
+          taskTicksTotal: opts.taskTicks || 24,
+          taskTicksLeft: opts.taskTicks || 24,
+        };
+        const wallClock = formatWallClock(s.startTs, s.tick, s.simSecondsPerTick);
+        const events = s.events.slice();
+        pushEvent(events, {
+          t: s.tick, wallClock, category: "workforce", kind: "info", icon: "🧑‍🔧",
+          msg: `${opts.id} ${opts.name} dispatched to ${opts.targetMachineCode}`,
+        });
+        return {
+          ...s,
+          activeWorkers: [...s.activeWorkers, nw],
+          events,
+          humanInterventionsCount: s.humanInterventionsCount + 1,
+          aiHighlightedMachines: [
+            opts.targetMachineCode,
+            ...s.aiHighlightedMachines.filter((c) => c !== opts.targetMachineCode),
+          ].slice(0, 5),
+        };
+      });
+    },
+    []
+  );
+
+  /** v2.0 — apply arbitrary agent action to local sim state. Called
+   *  by useCoordinatorAgent for every executed action returned from /api/agent. */
+  const applyAgentAction = useCallback(
+    (action: { tool: string; args: any; agentName?: string }) => {
+      const { tool, args } = action;
+      if (tool === "dispatch_maintenance") {
+        if (args.machineId) dispatchMaintenance(args.machineId);
+      } else if (tool === "assign_worker") {
+        dispatchWorker({
+          id: args.workerId,
+          name: args.workerName || args.workerId,
+          targetMachineCode: args.machineCode,
+          missionId: args.missionId,
+          taskTicks: 24,
+        });
+      } else if (tool === "pause_machine") {
+        const id = codeToId(args.machineCode);
+        setState((s) => {
+          const machines = s.machines.map((m) =>
+            m.id === id ? { ...m, downtimeTicksLeft: Math.max(m.downtimeTicksLeft, 12), faultTag: "SAFETY PAUSE" } : m
+          );
+          return { ...s, machines };
+        });
+      } else if (tool === "throttle_upstream" || tool === "reroute_material" || tool === "raise_operator_alert") {
+        // These are informational for the sim; the audit is in Mongo already.
+        setState((s) => ({
+          ...s,
+          autonomousActionsCount: s.autonomousActionsCount + 1,
+          aiHighlightedMachines: args.machineCode
+            ? [args.machineCode, ...s.aiHighlightedMachines.filter((c) => c !== args.machineCode)].slice(0, 5)
+            : s.aiHighlightedMachines,
+        }));
+      }
+    },
+    [dispatchMaintenance, dispatchWorker]
+  );
+
   const wallClock = formatWallClock(state.startTs, state.tick, state.simSecondsPerTick);
   const wallDate = new Date(state.startTs + state.tick * state.simSecondsPerTick * 1000)
     .toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 
   return {
     state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance,
+    dispatchWorker, applyAgentAction,
     wallClock, wallDate,
   };
 }

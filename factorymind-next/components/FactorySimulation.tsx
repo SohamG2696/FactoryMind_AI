@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useFactorySim, MachineState, EventCategory } from "@/hooks/useFactorySim";
-import FactoryFloorSVG from "@/components/FactoryFloorSVG";
+import { useCoordinatorAgent } from "@/hooks/useCoordinatorAgent";
+import FactoryFloorSVG, { FloorLayer } from "@/components/FactoryFloorSVG";
 import ProductionFlowStrip from "@/components/ProductionFlowStrip";
+import AIControlCenter from "@/components/AIControlCenter";
+import LayerToggle from "@/components/LayerToggle";
 import { MachineSVG } from "@/components/MachineSVGs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -17,7 +20,6 @@ import {
   faSignal,
   faBoxesStacked,
   faTruck,
-  faLayerGroup,
   faHeartPulse,
   faArrowUp,
   faShieldHalved,
@@ -190,9 +192,18 @@ function ChartCard({ label, val, data, color }: { label: string; val: string; da
 
 /* ─────────── the page ─────────── */
 export default function FactorySimulation() {
-  const { state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance, wallClock, wallDate } = useFactorySim();
+  const { state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance,
+    applyAgentAction, wallClock, wallDate } = useFactorySim();
   const [inspectId, setInspectId] = useState<string | null>(null);
   const [tab, setTab] = useState<"all" | EventCategory>("all");
+  const [agentEnabled, setAgentEnabled] = useState(true);
+  const [layer, setLayer] = useState<FloorLayer>("floor");
+
+  const agent = useCoordinatorAgent(state, {
+    enabled: agentEnabled,
+    intervalMs: 6000,
+    applyAgentAction,
+  });
 
   const inspect = inspectId ? state.machines.find((m) => m.id === inspectId) || null : null;
 
@@ -280,42 +291,41 @@ export default function FactorySimulation() {
         </div>
       </div>
 
-      {/* 5-KPI strip */}
+      {/* KPI strip — only cards backed by live sim state. WIP + bottleneck
+          live in the Production Flow strip below, so we don't repeat them. */}
       <div className="sim-kpi-mini">
         <MiniKpiCard
           icon={faSignal}
           label="OEE"
           value={`${(state.oee * 100).toFixed(1)}%`}
-          delta={`+${((state.oee - (state.kpiHistory.oee[0] || 0.98)) * 100).toFixed(1)}%`}
+          delta={
+            state.kpiHistory.oee.length >= 2
+              ? `${((state.oee - state.kpiHistory.oee[0]) * 100 >= 0 ? "+" : "")}${((state.oee - state.kpiHistory.oee[0]) * 100).toFixed(1)}%`
+              : "—"
+          }
           deltaPositive
-          chart={<MiniLine data={state.kpiHistory.oee.length ? state.kpiHistory.oee : [0.98, 0.99, 0.995, 0.996]} color="var(--success)" />}
+          chart={<MiniLine data={state.kpiHistory.oee} color="var(--success)" />}
         />
         <MiniKpiCard
           icon={faBoxesStacked}
           label="TOTAL PRODUCED"
           value={String(state.totalProduced)}
-          delta={`+${kpiDelta} (${((kpiDelta / Math.max(state.totalProduced, 1)) * 100).toFixed(1)}%)`}
+          delta={kpiDelta > 0 ? `+${kpiDelta} in window` : "—"}
           deltaPositive
-          chart={<MiniBars data={state.kpiHistory.produced.length ? state.kpiHistory.produced : [8, 10, 9, 12, 11, 12]} color="var(--primary)" />}
+          chart={<MiniBars data={state.kpiHistory.produced} color="var(--primary)" />}
         />
         <MiniKpiCard
           icon={faTruck}
           label="ACTIVE AGVS"
           value={`${activeAgvs} / ${state.agvs.length}`}
           sub={activeAgvs === state.agvs.length ? "All Operational" : `${state.agvs.length - activeAgvs} loading`}
-          statusDot="var(--success)"
-        />
-        <MiniKpiCard
-          icon={faLayerGroup}
-          label="WIP (IN SYSTEM)"
-          value={String(state.wip)}
-          chart={<MiniBars data={state.kpiHistory.wip.length ? state.kpiHistory.wip : [10, 11, 12, 13, 12, 12]} color="var(--info)" />}
+          statusDot={activeAgvs === state.agvs.length ? "var(--success)" : "var(--warning)"}
         />
         <MiniKpiCard
           icon={faHeartPulse}
           label="AVG HEALTH"
           value={`${(state.machines.reduce((s, m) => s + m.health, 0) / state.machines.length).toFixed(0)}%`}
-          chart={<MiniLine data={state.kpiHistory.health.length ? state.kpiHistory.health : [98, 97, 98, 99, 98, 99]} color="var(--success)" />}
+          chart={<MiniLine data={state.kpiHistory.health} color="var(--success)" />}
         />
       </div>
 
@@ -336,11 +346,16 @@ export default function FactorySimulation() {
             </span>
           </div>
 
+          <LayerToggle layer={layer} onChange={setLayer} />
+
           <div className="sim-floor-viewport">
             <FactoryFloorSVG
               machines={state.machines}
               agvs={state.agvs}
               currentPart={state.currentPart}
+              activeWorkers={state.activeWorkers}
+              aiHighlightedMachines={state.aiHighlightedMachines}
+              layer={layer}
               onInspect={setInspectId}
             />
           </div>
@@ -423,6 +438,19 @@ export default function FactorySimulation() {
         throughputPerHour={state.throughputPerHour}
         bottleneckId={state.bottleneckId}
       />
+
+      {/* AI Control Center — full OBSERVE→VERIFY lifecycle across 5 agents */}
+      <AIControlCenter
+        enabled={agentEnabled}
+        onToggle={() => setAgentEnabled((v) => !v)}
+        history={agent.history}
+        latest={agent.latest}
+        busy={agent.busy}
+        lastError={agent.lastError}
+        autonomousCount={state.autonomousActionsCount}
+        humanInterventions={state.humanInterventionsCount}
+        brainLabel={agent.latest?.brain || "multi-agent"}
+      />
     </>
   );
 }
@@ -433,6 +461,10 @@ function iconForCategory(cat: EventCategory): string {
     case "agv": return "🚚";
     case "flow": return "📦";
     case "alert": return "⚠";
+    case "ai": return "🤖";
+    case "workforce": return "🧑‍🔧";
+    case "safety": return "🛡";
+    default: return "•";
   }
 }
 

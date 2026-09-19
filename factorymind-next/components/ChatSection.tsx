@@ -29,7 +29,13 @@ const SUGGESTIONS = [
   { label: "⚡ Spindle Vibration Peaks", text: "Give me the checklist for vibration peaks exceeding 4.8 mm/s in machine bearings to prevent spindle seizure." },
 ];
 
-export default function ChatSection() {
+interface ChatSectionProps {
+  /** Optional live plant snapshot — when provided, the Copilot is
+   *  grounded in real sim state (Ops Copilot mode). */
+  liveSnapshot?: Record<string, unknown>;
+}
+
+export default function ChatSection({ liveSnapshot }: ChatSectionProps = {}) {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,6 +65,7 @@ export default function ChatSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...history, { role: "user", content: queryText }],
+          snapshot: liveSnapshot,
         }),
       });
 

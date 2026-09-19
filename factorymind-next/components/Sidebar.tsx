@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth, ROLE_PERMISSIONS, UserRole } from "@/context/AuthContext";
 import AuthModal from "@/components/AuthModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -25,6 +25,8 @@ import {
 
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 
+// `route` items navigate to a separate URL; the rest are index-based sections
+// inside DashboardClient's activeSection switch.
 export const navItems = [
   { code: "01", icon: faHouse,              label: "Dashboard",       minRole: "USER", tag: "HUD" },
   { code: "02", icon: faMicrochip,          label: "Digital Twin",    minRole: "USER", tag: "TWIN" },
@@ -37,6 +39,9 @@ export const navItems = [
   { code: "09", icon: faFileLines,          label: "Reports",         minRole: "SUPERVISOR", tag: "DOCS" },
   { code: "10", icon: faUser,               label: "Users & Access",  minRole: "ADMIN", tag: "RBAC" },
   { code: "11", icon: faGear,               label: "Settings",        minRole: "ADMIN", tag: "CONF" },
+  { code: "12", icon: faIndustry,           label: "Live Simulation", minRole: "USER", tag: "NEW",  route: "/simulation" },
+  { code: "13", icon: faUser,               label: "Manpower",        minRole: "USER", tag: "DB",   route: "/manpower"   },
+  { code: "14", icon: faSliders,            label: "Scenario Lab",    minRole: "USER", tag: "AI",   route: "/scenario"   },
 ];
 
 interface SidebarProps {
@@ -48,16 +53,29 @@ interface SidebarProps {
 
 export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: SidebarProps) {
   const { user, role, canAccessSection } = useAuth();
+  const router = useRouter();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [targetSwitchRole, setTargetSwitchRole] = useState<UserRole | null>(null);
 
   const currentRoleInfo = ROLE_PERMISSIONS[role];
 
   const handleSelect = (index: number) => {
+    const item = navItems[index];
+    const isRouteItem = !!(item as { route?: string }).route;
+
+    // Route items live in the app router — no numbered-section RBAC gating.
+    if (isRouteItem) {
+      router.push((item as { route: string }).route);
+      if (setIsOpen && window.innerWidth <= 1024) {
+        setIsOpen(false);
+      }
+      return;
+    }
+
     const hasAccess = canAccessSection(index);
     if (!hasAccess) {
       // Prompt password authentication for the required role
-      const minRoleNeeded = navItems[index].minRole as UserRole;
+      const minRoleNeeded = item.minRole as UserRole;
       setTargetSwitchRole(minRoleNeeded);
       setAuthModalOpen(true);
       return;
@@ -112,8 +130,9 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
 
         <ul>
           {navItems.map((item, i) => {
-            const hasAccess = canAccessSection(i);
-            const isActive = active === i;
+            const isRoute = !!(item as { route?: string }).route;
+            const hasAccess = isRoute ? true : canAccessSection(i);
+            const isActive = !isRoute && active === i;
 
             return (
               <li
@@ -136,43 +155,6 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
           })}
         </ul>
 
-        {/* Live Simulation route link (external to numbered sections) */}
-        <Link
-          href="/simulation"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            margin: "8px 12px 4px 12px",
-            padding: "10px 12px",
-            background: "linear-gradient(90deg, rgba(255, 90, 31,0.18), rgba(56,189,248,0.12))",
-            border: "1px solid rgba(255, 90, 31,0.45)",
-            borderRadius: 8,
-            color: "#FF5A1F",
-            textDecoration: "none",
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-            boxShadow: "0 0 18px rgba(255, 90, 31,0.15)",
-          }}
-          title="Open live factory simulation"
-        >
-          <FontAwesomeIcon icon={faIndustry} />
-          <span style={{ flex: 1 }}>Live Simulation</span>
-          <span
-            style={{
-              fontSize: 8,
-              padding: "2px 5px",
-              background: "#3F7A5F33",
-              color: "#3F7A5F",
-              border: "1px solid #3F7A5F66",
-              borderRadius: 3,
-              letterSpacing: "0.1em",
-            }}
-          >
-            NEW
-          </span>
-        </Link>
 
         {/* Sidebar Footer User Card with Secure Quick Switcher */}
         <div className="sidebar-user-card">

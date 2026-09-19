@@ -255,33 +255,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usersList, setUsersList] = useState<UserAccount[]>(INITIAL_USERS);
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem(STORAGE_KEY_USER);
-      const savedList = localStorage.getItem(STORAGE_KEY_USERS_LIST);
-
-      if (savedList) {
-        const parsed: UserAccount[] = JSON.parse(savedList);
-        // Ensure the 4 admins and 4 supervisors are always present
-        const fixedIds = new Set(INITIAL_USERS.map((u) => u.id));
-        const merged = [
-          ...INITIAL_USERS,
-          ...parsed.filter((u) => !fixedIds.has(u.id)),
-        ];
-        setUsersList(merged);
-      } else {
-        setUsersList(INITIAL_USERS);
+    // Hydrate from MongoDB first; fall back to hardcoded seed if API down.
+    let cancelled = false;
+    (async () => {
+      let dbUsers: UserAccount[] | null = null;
+      try {
+        const res = await fetch("/api/users", { cache: "no-store" });
+        const json = await res.json();
+        if (json?.ok && Array.isArray(json.users) && json.users.length > 0) {
+          dbUsers = json.users as UserAccount[];
+        }
+      } catch {
+        // API/network down — silently fall back.
       }
+      if (cancelled) return;
 
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      } else {
-        setUser(INITIAL_USERS[0]);
+      const sourceList = dbUsers ?? INITIAL_USERS;
+
+      try {
+        const savedUser = localStorage.getItem(STORAGE_KEY_USER);
+        if (savedUser) {
+          const parsed = JSON.parse(savedUser);
+          // Re-look up from live source so profile stays fresh.
+          const match = sourceList.find((u) => u.id === parsed.id) || parsed;
+          setUser(match);
+        } else {
+          setUser(sourceList[0]);
+        }
+      } catch {
+        setUser(sourceList[0]);
       }
-    } catch (e) {
-      console.warn("Error restoring session:", e);
-      setUsersList(INITIAL_USERS);
-      setUser(INITIAL_USERS[0]);
-    }
+      setUsersList(sourceList);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const saveUserSession = (currentUser: UserAccount | null) => {
