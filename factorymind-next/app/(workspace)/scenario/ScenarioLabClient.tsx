@@ -11,6 +11,8 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { useRouter } from "next/navigation";
+
 interface ScenarioMeta {
   key: string;
   label: string;
@@ -91,7 +93,13 @@ export default function ScenarioLabClient() {
     }
   };
 
+  const router = useRouter();
   const currentMeta = SCENARIOS.find((s) => s.key === activeScenario);
+
+  const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    router.push(path);
+  };
 
   return (
     <div className="sim-page-wrapper">
@@ -110,9 +118,9 @@ export default function ScenarioLabClient() {
           <span>DETERMINISTIC PHYSICS · 200-TICK PARALLEL RUNS</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary"><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
-          <Link href="/simulation" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
-          <Link href="/" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
+          <Link href="/dashboard" className="sim-nav-btn primary" onClick={(e) => handleNav(e, "/dashboard")}><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
+          <Link href="/simulation" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/simulation")}><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
+          <Link href="/" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/")}><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
         </div>
       </header>
 

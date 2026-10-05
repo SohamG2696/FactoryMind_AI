@@ -12,6 +12,7 @@ import {
   faLayerGroup, faSignal, faBell, faUserGear, faGears, faScrewdriverWrench,
   faTriangleExclamation, faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/navigation";
 
 const SKILL_LABELS: Record<string, { label: string; color: string }> = {
   mechanical: { label: "Mechanical", color: "#B23A3A" },
@@ -117,6 +118,13 @@ export default function ManpowerClient() {
     handleDragEnd();
   };
 
+  const router = useRouter();
+
+  const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    router.push(path);
+  };
+
   return (
     <div className="sim-page-wrapper">
       <div className="background-grid" />
@@ -134,9 +142,9 @@ export default function ManpowerClient() {
           <span>HUMAN INTERVENTION AS A SERVICE · LIVE FROM MONGODB</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary"><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
-          <Link href="/simulation" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
-          <Link href="/" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
+          <Link href="/dashboard" className="sim-nav-btn primary" onClick={(e) => handleNav(e, "/dashboard")}><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
+          <Link href="/simulation" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/simulation")}><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
+          <Link href="/" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/")}><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
         </div>
       </header>
 

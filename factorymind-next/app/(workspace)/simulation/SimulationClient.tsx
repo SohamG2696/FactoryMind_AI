@@ -6,7 +6,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faHouse, faWaveSquare, faIndustry } from "@fortawesome/free-solid-svg-icons";
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 
+import { useRouter } from "next/navigation";
+
 export default function SimulationClient() {
+  const router = useRouter();
+
+  const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    router.push(path);
+  };
+
   return (
     <div className="sim-page-wrapper">
       <div className="background-grid" />
@@ -27,11 +36,19 @@ export default function SimulationClient() {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary">
+          <Link
+            href="/dashboard"
+            className="sim-nav-btn primary"
+            onClick={(e) => handleNav(e, "/dashboard")}
+          >
             <FontAwesomeIcon icon={faArrowLeft} />
             <span>Dashboard</span>
           </Link>
-          <Link href="/" className="sim-nav-btn secondary">
+          <Link
+            href="/"
+            className="sim-nav-btn secondary"
+            onClick={(e) => handleNav(e, "/")}
+          >
             <FontAwesomeIcon icon={faHouse} />
             <span>Home</span>
           </Link>
