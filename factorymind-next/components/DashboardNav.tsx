@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useClock } from "@/hooks/useClock";
 import { useAuth, UserRole, ROLE_PERMISSIONS } from "@/context/AuthContext";
 import { useInbox } from "@/hooks/useInbox";
+import { useSim } from "@/context/FactorySimContext";
+import { summarizePlant } from "@/lib/plantMetrics";
 import AuthModal from "@/components/AuthModal";
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -36,6 +38,8 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen, o
   const time = useClock();
   const router = useRouter();
   const { user, role, logout } = useAuth();
+  const { state, agent, mlHealth } = useSim();
+  const plant = summarizePlant(state, agent.latest?.ml ?? {});
   // Only supervisors have a routed inbox — poll only for them.
   const inboxSupervisorId = role === "SUPERVISOR" ? user?.id : undefined;
   const { unreadCount } = useInbox(inboxSupervisorId, 10000);
@@ -112,18 +116,20 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen, o
         <div className="nav-twin-ticker">
           <div className="ticker-item">
             <span className="ticker-pulse-dot" />
-            <span className="ticker-label">TWIN SYNC:</span>
-            <span className="ticker-val">100% REALTIME</span>
+            <span className="ticker-label">ML:</span>
+            <span className="ticker-val">
+              {mlHealth.online === null ? "CONNECTING" : plant.mlLive ? "LIVE INFERENCE" : mlHealth.online ? "ONLINE" : "FALLBACK"}
+            </span>
           </div>
           <div className="ticker-sep">|</div>
           <div className="ticker-item hide-mobile">
-            <span className="ticker-label">SCADA:</span>
-            <span className="ticker-val">12ms MQTT</span>
+            <span className="ticker-label">OEE:</span>
+            <span className="ticker-val">{(state.oee * 100).toFixed(1)}%</span>
           </div>
           <div className="ticker-sep hide-mobile">|</div>
           <div className="ticker-item hide-mobile">
-            <span className="ticker-label">ACTIVE SENSORS:</span>
-            <span className="ticker-val">318 / 318</span>
+            <span className="ticker-label">CELLS ONLINE:</span>
+            <span className="ticker-val">{plant.runningCells} / {plant.totalCells}</span>
           </div>
         </div>
 

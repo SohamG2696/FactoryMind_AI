@@ -88,6 +88,11 @@ export interface MlPredictionMap {
     riskLevel: string;
     confidence: number;
     recommendation?: string;
+    /** LightGBM health score (0-100), RandomForest operational status. */
+    healthScore?: number;
+    operationalStatus?: string;
+    /** "ml-service" = real LightGBM + RF inference; "analytical" = heuristic fallback. */
+    source?: "ml-service" | "analytical";
   };
 }
 

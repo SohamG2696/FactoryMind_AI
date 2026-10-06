@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useSim } from "@/context/FactorySimContext";
+import { summarizePlant, formatAccuracy, SIGNALS_PER_CELL } from "@/lib/plantMetrics";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserShield,
@@ -25,21 +26,11 @@ export default function HeroSection({
   onOpenAiInsights,
 }: HeroSectionProps) {
   const { user, role } = useAuth();
-  const [health, setHealth] = useState(96);
-  const [activeNodes, setActiveNodes] = useState(318);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setHealth((prev) => {
-        let next = prev + Math.floor(Math.random() * 3) - 1;
-        if (next > 99) next = 99;
-        if (next < 91) next = 91;
-        return next;
-      });
-      setActiveNodes((prev) => 318 + Math.floor(Math.random() * 3) - 1);
-    }, 3000);
-    return () => clearInterval(id);
-  }, []);
+  const { state, agent, mlHealth } = useSim();
+  const plant = summarizePlant(state, agent.latest?.ml ?? {});
+  const oee = Math.round(state.oee * 100);
+  const plantState =
+    plant.criticalCells > 0 ? "CRITICAL" : plant.warningCells > 0 ? "DEGRADED" : "OPTIMAL";
 
   const handleDigitalTwinClick = () => {
     if (onOpenDigitalTwin) {
@@ -115,7 +106,7 @@ export default function HeroSection({
 
           <p className="hero-desc">
             {isAdmin &&
-              `Welcome back, ${user?.name || "Director"}. Full plant 26-machine fleet telemetry, autonomous multi-agent policies, and dual-model predictive maintenance are active.`}
+              `Welcome back, ${user?.name || "Director"}. Full plant ${plant.totalCells}-cell fleet telemetry, autonomous multi-agent policies, and dual-model predictive maintenance are active.`}
             {isSupervisor &&
               `Welcome back, ${user?.name || "Supervisor"}. Line operations, technician dispatch, real-time vibration alarms, and shift target execution are under active monitoring.`}
             {!isAdmin && !isSupervisor &&
@@ -141,25 +132,25 @@ export default function HeroSection({
             </button>
           </div>
 
-          {/* Quick HUD Metrics Bar */}
+          {/* Quick HUD Metrics Bar — live from the shared simulation + ML service */}
           <div className="hero-stats-row">
             <div className="hero-stat-item">
-              <span className="hero-stat-value">26</span>
-              <span className="hero-stat-label">Active Machines</span>
+              <span className="hero-stat-value">{plant.runningCells} / {plant.totalCells}</span>
+              <span className="hero-stat-label">Cells Online</span>
             </div>
             <div className="hero-stat-sep" />
             <div className="hero-stat-item">
-              <span className="hero-stat-value">{activeNodes}</span>
-              <span className="hero-stat-label">IoT Sensor Nodes</span>
+              <span className="hero-stat-value">{plant.totalCells * SIGNALS_PER_CELL}</span>
+              <span className="hero-stat-label">Live Sensor Signals</span>
             </div>
             <div className="hero-stat-sep" />
             <div className="hero-stat-item">
-              <span className="hero-stat-value">12ms</span>
-              <span className="hero-stat-label">SCADA Latency</span>
+              <span className="hero-stat-value">{state.throughputPerHour.toFixed(0)}/h</span>
+              <span className="hero-stat-label">Throughput</span>
             </div>
             <div className="hero-stat-sep" />
-            <div className="hero-stat-item">
-              <span className="hero-stat-value" style={{ color: "#3F7A5F" }}>97.4%</span>
+            <div className="hero-stat-item" title={mlHealth.evaluationMethod ?? undefined}>
+              <span className="hero-stat-value" style={{ color: "#3F7A5F" }}>{formatAccuracy(mlHealth)}</span>
               <span className="hero-stat-label">AI Accuracy</span>
             </div>
           </div>
@@ -178,13 +169,13 @@ export default function HeroSection({
                 <FontAwesomeIcon icon={faTowerBroadcast} className="gauge-icon" />
                 <span>TELEMETRY STREAM</span>
               </div>
-              <h1 className="gauge-percent">{health}%</h1>
+              <h1 className="gauge-percent">{oee}%</h1>
               <p className="gauge-title">
-                {isAdmin ? "Plant Health OEE" : isSupervisor ? "Shift Line Health" : "Workcell Health"}
+                Plant OEE
               </p>
               <div className="gauge-status-tag">
                 <span className="gauge-status-dot" />
-                <span>STATE: OPTIMAL</span>
+                <span>STATE: {plantState}</span>
               </div>
             </div>
           </div>

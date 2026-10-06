@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Fragment, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth, ROLE_PERMISSIONS, UserRole } from "@/context/AuthContext";
 import AuthModal from "@/components/AuthModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -9,39 +9,45 @@ import {
   faHouse,
   faMicrochip,
   faRobot,
-  faGears,
   faChartLine,
-  faScrewdriverWrench,
-  faBell,
-  faFileLines,
-  faUser,
   faGear,
   faIndustry,
   faSliders,
   faLock,
-  faShieldHalved,
   faChevronLeft,
+  faFlaskVial,
+  faPeopleGroup,
+  faUserShield,
 } from "@fortawesome/free-solid-svg-icons";
 
 import FactoryMindLogo from "@/components/FactoryMindLogo";
 
-// `route` items navigate to a separate URL; the rest are index-based sections
-// inside DashboardClient's activeSection switch.
-export const navItems = [
-  { code: "01", icon: faHouse,              label: "Dashboard",       minRole: "USER", tag: "HUD" },
-  { code: "02", icon: faMicrochip,          label: "Digital Twin",    minRole: "USER", tag: "TWIN" },
-  { code: "03", icon: faRobot,              label: "AI Agent",        minRole: "SUPERVISOR", tag: "AGENT" },
-  { code: "04", icon: faSliders,            label: "ML Workbench",    minRole: "ADMIN", tag: "ML" },
-  { code: "05", icon: faGears,              label: "Machines",        minRole: "USER", tag: "CELLS" },
-  { code: "06", icon: faChartLine,          label: "Analytics",       minRole: "SUPERVISOR", tag: "DATA" },
-  { code: "07", icon: faScrewdriverWrench,  label: "Maintenance",     minRole: "USER", tag: "PLAN" },
-  { code: "08", icon: faBell,               label: "Alerts",          minRole: "USER", tag: "SCADA" },
-  { code: "09", icon: faFileLines,          label: "Reports",         minRole: "SUPERVISOR", tag: "DOCS" },
-  { code: "10", icon: faUser,               label: "Users & Access",  minRole: "ADMIN", tag: "RBAC" },
-  { code: "11", icon: faGear,               label: "Settings",        minRole: "ADMIN", tag: "CONF" },
-  { code: "12", icon: faIndustry,           label: "Live Simulation", minRole: "USER", tag: "NEW",  route: "/simulation" },
-  { code: "13", icon: faUser,               label: "Manpower",        minRole: "USER", tag: "DB",   route: "/manpower"   },
-  { code: "14", icon: faSliders,            label: "Scenario Lab",    minRole: "USER", tag: "AI",   route: "/scenario"   },
+// Navigation follows the demo story: Monitor -> Predict & Decide -> Operate -> Admin.
+// `section` items are index-based views inside DashboardClient's activeSection switch
+// (the index is also what ROLE_PERMISSIONS.allowedSections refers to);
+// `route` items navigate to a separate URL.
+export interface NavItem {
+  code: string;
+  icon: typeof faHouse;
+  label: string;
+  minRole: UserRole;
+  tag: string;
+  group: string;
+  section?: number;
+  route?: string;
+}
+
+export const navItems: NavItem[] = [
+  { code: "01", icon: faHouse,       label: "Dashboard",       minRole: "USER",       tag: "HUD",   group: "Monitor",            section: 0 },
+  { code: "02", icon: faMicrochip,   label: "Digital Twin",    minRole: "USER",       tag: "TWIN",  group: "Monitor",            section: 1 },
+  { code: "03", icon: faIndustry,    label: "Live Simulation", minRole: "USER",       tag: "SIM",   group: "Monitor",            route: "/simulation" },
+  { code: "04", icon: faRobot,       label: "AI Agent",        minRole: "SUPERVISOR", tag: "AGENT", group: "Predict & Decide",   section: 2 },
+  { code: "05", icon: faFlaskVial,   label: "Scenario Lab",    minRole: "USER",       tag: "WHAT-IF", group: "Predict & Decide", route: "/scenario" },
+  { code: "06", icon: faSliders,     label: "ML Workbench",    minRole: "ADMIN",      tag: "ML",    group: "Predict & Decide",   section: 3 },
+  { code: "07", icon: faChartLine,   label: "Analytics",       minRole: "SUPERVISOR", tag: "DATA",  group: "Operate",            section: 4 },
+  { code: "08", icon: faPeopleGroup, label: "Manpower",        minRole: "USER",       tag: "CREW",  group: "Operate",            route: "/manpower" },
+  { code: "09", icon: faUserShield,  label: "Users & Access",  minRole: "ADMIN",      tag: "RBAC",  group: "Admin",              section: 5 },
+  { code: "10", icon: faGear,        label: "Settings",        minRole: "ADMIN",      tag: "CONF",  group: "Admin",              section: 6 },
 ];
 
 interface SidebarProps {
@@ -54,37 +60,36 @@ interface SidebarProps {
 export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: SidebarProps) {
   const { user, role, canAccessSection } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [targetSwitchRole, setTargetSwitchRole] = useState<UserRole | null>(null);
 
   const currentRoleInfo = ROLE_PERMISSIONS[role];
 
-  const handleSelect = (index: number) => {
-    const item = navItems[index];
-    const isRouteItem = !!(item as { route?: string }).route;
+  const closeOnMobile = () => {
+    if (setIsOpen && window.innerWidth <= 1024) {
+      setIsOpen(false);
+    }
+  };
 
+  const handleSelect = (item: NavItem) => {
     // Route items live in the app router — no numbered-section RBAC gating.
-    if (isRouteItem) {
-      router.push((item as { route: string }).route);
-      if (setIsOpen && window.innerWidth <= 1024) {
-        setIsOpen(false);
-      }
+    if (item.route) {
+      router.push(item.route);
+      closeOnMobile();
       return;
     }
 
-    const hasAccess = canAccessSection(index);
-    if (!hasAccess) {
+    const section = item.section!;
+    if (!canAccessSection(section)) {
       // Prompt password authentication for the required role
-      const minRoleNeeded = item.minRole as UserRole;
-      setTargetSwitchRole(minRoleNeeded);
+      setTargetSwitchRole(item.minRole);
       setAuthModalOpen(true);
       return;
     }
 
-    onSelect(index);
-    if (setIsOpen && window.innerWidth <= 1024) {
-      setIsOpen(false);
-    }
+    onSelect(section);
+    closeOnMobile();
   };
 
   const handleQuickRoleClick = (targetRole: UserRole) => {
@@ -130,27 +135,29 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
 
         <ul>
           {navItems.map((item, i) => {
-            const isRoute = !!(item as { route?: string }).route;
-            const hasAccess = isRoute ? true : canAccessSection(i);
-            const isActive = !isRoute && active === i;
+            const hasAccess = item.route ? true : canAccessSection(item.section!);
+            const isActive = item.route ? pathname === item.route : active === item.section;
+            const startsGroup = i === 0 || navItems[i - 1].group !== item.group;
 
             return (
-              <li
-                key={item.label}
-                className={`${isActive ? "active" : ""} ${!hasAccess ? "restricted-item" : ""}`}
-                onClick={() => handleSelect(i)}
-                title={!hasAccess ? `Requires ${item.minRole} password authentication` : item.label}
-              >
-                <span className="sidebar-item-code">{item.code}</span>
-                <FontAwesomeIcon icon={item.icon} className="sidebar-item-icon" />
-                <span className="sidebar-item-label">{item.label}</span>
-                {item.tag && <span className="sidebar-item-tag">{item.tag}</span>}
-                {!hasAccess && (
-                  <span className="sidebar-lock-badge" title={`Locked — ${item.minRole} password required`}>
-                    <FontAwesomeIcon icon={faLock} style={{ fontSize: 10 }} />
-                  </span>
-                )}
-              </li>
+              <Fragment key={item.label}>
+                {startsGroup && <li className="sidebar-group-label">{item.group}</li>}
+                <li
+                  className={`${isActive ? "active" : ""} ${!hasAccess ? "restricted-item" : ""}`}
+                  onClick={() => handleSelect(item)}
+                  title={!hasAccess ? `Requires ${item.minRole} password authentication` : item.label}
+                >
+                  <span className="sidebar-item-code">{item.code}</span>
+                  <FontAwesomeIcon icon={item.icon} className="sidebar-item-icon" />
+                  <span className="sidebar-item-label">{item.label}</span>
+                  {item.tag && <span className="sidebar-item-tag">{item.tag}</span>}
+                  {!hasAccess && (
+                    <span className="sidebar-lock-badge" title={`Locked — ${item.minRole} password required`}>
+                      <FontAwesomeIcon icon={faLock} style={{ fontSize: 10 }} />
+                    </span>
+                  )}
+                </li>
+              </Fragment>
             );
           })}
         </ul>

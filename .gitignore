@@ -1,0 +1,3 @@
+# Local tooling and generated documents (kept out of the repo)
+.claude/
+docs/

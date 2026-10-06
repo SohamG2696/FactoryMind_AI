@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SimState } from "./useFactorySim";
+import type { MlPredictionMap } from "@/lib/agents/types";
 
 export interface AgentAction {
   tool: string;
@@ -25,7 +26,7 @@ export interface AgentDecision {
   executiveSummary: string;
   reports: AgentSubReport[];
   actions: AgentAction[];
-  ml: Record<string, { failureProbability: number; riskLevel: string; confidence: number; recommendation?: string }>;
+  ml: MlPredictionMap;
 }
 
 interface UseCoordinatorAgentOpts {
@@ -45,7 +46,13 @@ export function useCoordinatorAgent(
   const [busy, setBusy] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+  // applyAgentAction changes identity on every sim tick; read it through a ref
+  // so the polling interval below isn't torn down and re-fired each render.
+  const applyRef = useRef(applyAgentAction);
+  useEffect(() => {
+    stateRef.current = state;
+    applyRef.current = applyAgentAction;
+  });
 
   const tick = useCallback(async () => {
     setBusy(true);
@@ -92,9 +99,10 @@ export function useCoordinatorAgent(
       };
 
       // Apply mutating actions locally
-      if (applyAgentAction) {
+      const apply = applyRef.current;
+      if (apply) {
         for (const a of decision.actions) {
-          try { applyAgentAction(a); } catch (e) { console.warn("applyAgentAction", e); }
+          try { apply(a); } catch (e) { console.warn("applyAgentAction", e); }
         }
       }
 
@@ -105,7 +113,7 @@ export function useCoordinatorAgent(
     } finally {
       setBusy(false);
     }
-  }, [applyAgentAction]);
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;

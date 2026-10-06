@@ -15,19 +15,38 @@ interface PredictInput {
   rotational_speed_rpm: number;
   torque_nm: number;
   tool_wear_min: number;
+  machine_id: number;
+  temperature_c: number;
+  vibration_hz: number;
+  error_rate_pct: number;
+  qc_defect_rate_pct: number;
+  production_speed_uph: number;
 }
 
-/** Approximate the AI4I input schema from our sim state. Good enough
- *  for LightGBM to produce a plausible failure probability. */
-function toPredictInput(m: MachineSnap): PredictInput {
-  const air = 273 + 24; // 24°C ambient
-  const proc = 273 + m.temperature;
+/**
+ * Map sim telemetry into the feature space the models were trained on.
+ * LightGBM was trained on AI4I 2020, where failures come from tool wear x torque
+ * (overstrain), so the sim's raw RPM (~500) and a utilisation-only torque would
+ * sit far outside the training range and always score ~0%. Instead we hold RPM
+ * at the AI4I mean and let vibration + load drive torque, and scale tool wear to
+ * AI4I minutes (0-240). The RandomForest's factory telemetry gets error/defect
+ * rates derived from cell health.
+ */
+function toPredictInput(m: MachineSnap, index: number): PredictInput {
+  const air = 298;
   return {
     air_temperature_k: air,
-    process_temperature_k: proc,
-    rotational_speed_rpm: Math.max(300, Math.min(2500, m.rpm)),
-    torque_nm: 20 + m.utilization * 60, // rough torque proxy
-    tool_wear_min: Math.round(m.toolWear * 2.5), // 0..250
+    // AI4I process temp sits ~10 K above air; heat above nominal 45 °C widens it.
+    process_temperature_k: air + 10 + Math.max(0, m.temperature - 45) * 0.12,
+    rotational_speed_rpm: 1538,
+    torque_nm: 40 + Math.max(0, m.vibration - 0.3) * 6 + m.utilization * 8,
+    tool_wear_min: Math.round(m.toolWear * 2.4),
+    machine_id: index + 1,
+    temperature_c: m.temperature,
+    vibration_hz: m.vibration,
+    error_rate_pct: (100 - m.health) / 10,
+    qc_defect_rate_pct: (100 - m.health) / 12,
+    production_speed_uph: (300 * m.utilization) / 0.7,
   };
 }
 
@@ -39,8 +58,8 @@ export async function fetchMlPredictions(
   await Promise.all(
     machines
       .filter((m) => m.status !== "downtime")
-      .map(async (m) => {
-        const payload = toPredictInput(m);
+      .map(async (m, i) => {
+        const payload = toPredictInput(m, i);
         try {
           const ctl = new AbortController();
           const to = setTimeout(() => ctl.abort(), 1500);
@@ -54,12 +73,17 @@ export async function fetchMlPredictions(
           if (res.ok) {
             const j: any = await res.json();
             const pm = j?.pipeline?.predictive_maintenance;
+            const fac = j?.pipeline?.factory_operational_status;
             if (pm) {
               results[m.code] = {
                 failureProbability: pm.failure_probability,
                 riskLevel: pm.risk_level,
-                confidence: pm.confidence,
-                recommendation: pm.recommendation,
+                // LightGBM returns no confidence; use the RandomForest's class confidence.
+                confidence: fac?.confidence ?? 0,
+                recommendation: fac?.description,
+                healthScore: pm.health_score,
+                operationalStatus: fac?.operational_status,
+                source: "ml-service",
               };
               return;
             }
@@ -85,6 +109,8 @@ export async function fetchMlPredictions(
               : risk === "WARNING"
               ? "Schedule maintenance"
               : "Nominal",
+          healthScore: Math.round((1 - prob) * 1000) / 10,
+          source: "analytical",
         };
       })
   );

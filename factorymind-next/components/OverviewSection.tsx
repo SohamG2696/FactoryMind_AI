@@ -1,18 +1,21 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useSim } from "@/context/FactorySimContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowTrendUp,
-  faCoins,
+  faClock,
   faGaugeHigh,
   faBrain,
 } from "@fortawesome/free-solid-svg-icons";
 
 export default function OverviewSection() {
-  const { role, user } = useAuth();
-  const isAdmin = role === "ADMIN";
-  const isSupervisor = role === "SUPERVISOR";
+  const { state } = useSim();
+  const oeePct = state.oee * 100;
+  const downtimeMin = Math.round((state.totalDowntime * state.simSecondsPerTick) / 60);
+  const elapsedMin = Math.max(1, Math.round((state.tick * state.simSecondsPerTick) / 60));
+  const cellMinutes = elapsedMin * Math.max(1, state.machines.length);
+  const availabilityPct = Math.max(0, 100 - (downtimeMin / cellMinutes) * 100);
 
   return (
     <section className="overview-hud">
@@ -20,29 +23,29 @@ export default function OverviewSection() {
         <div className="overview-card-top">
           <span className="ov-tag">TELEMETRY YIELD</span>
           <span className="ov-trend positive">
-            <FontAwesomeIcon icon={faArrowTrendUp} /> +8.4%
+            <FontAwesomeIcon icon={faArrowTrendUp} /> {state.throughputPerHour.toFixed(0)}/h
           </span>
         </div>
-        <h3 className="ov-title">{isAdmin ? "Total Plant Output" : isSupervisor ? "Shift Target Output" : "Workcell Output"}</h3>
-        <h1 className="ov-val">{isAdmin ? "18,450" : isSupervisor ? "4,850 / 5,200" : "840"}</h1>
-        <p className="ov-sub">{isAdmin ? "Units Produced Today" : isSupervisor ? "Current Shift Pace (93%)" : "Machined Parts"}</p>
+        <h3 className="ov-title">Plant Output</h3>
+        <h1 className="ov-val">{state.totalProduced.toLocaleString("en-IN")}</h1>
+        <p className="ov-sub">Units produced this shift · WIP {state.wip}</p>
         <div className="ov-progress-bar">
-          <div className="ov-fill blue-glow" style={{ width: "93%" }} />
+          <div className="ov-fill blue-glow" style={{ width: `${oeePct}%` }} />
         </div>
       </div>
 
       <div className="overview-card-hud">
         <div className="overview-card-top">
-          <span className="ov-tag">FINANCIAL OPEX</span>
+          <span className="ov-tag">AVAILABILITY</span>
           <span className="ov-trend positive">
-            <FontAwesomeIcon icon={faCoins} /> SAVINGS
+            <FontAwesomeIcon icon={faClock} /> {availabilityPct.toFixed(1)}%
           </span>
         </div>
-        <h3 className="ov-title">{isAdmin ? "Maintenance Saved" : isSupervisor ? "Line Yield Pass" : "Cycle Time avg"}</h3>
-        <h1 className="ov-val">{isAdmin ? "₹2.8 Lakh" : isSupervisor ? "98.2%" : "38.2s"}</h1>
-        <p className="ov-sub">{isAdmin ? "Estimated Cost Reduction" : isSupervisor ? "Quality Metrology Pass" : "Per Component Spec"}</p>
+        <h3 className="ov-title">Cell Downtime</h3>
+        <h1 className="ov-val">{downtimeMin} min</h1>
+        <p className="ov-sub">Summed across all cells over {elapsedMin} sim-min</p>
         <div className="ov-progress-bar">
-          <div className="ov-fill green-glow" style={{ width: "98%" }} />
+          <div className="ov-fill green-glow" style={{ width: `${availabilityPct}%` }} />
         </div>
       </div>
 
@@ -50,14 +53,16 @@ export default function OverviewSection() {
         <div className="overview-card-top">
           <span className="ov-tag">OEE TELEMETRY</span>
           <span className="ov-trend neutral">
-            <FontAwesomeIcon icon={faGaugeHigh} /> OPTIMAL
+            <FontAwesomeIcon icon={faGaugeHigh} /> {oeePct >= 85 ? "WORLD-CLASS" : oeePct >= 60 ? "TYPICAL" : "LOW"}
           </span>
         </div>
-        <h3 className="ov-title">{isAdmin ? "Average Machine Efficiency" : isSupervisor ? "Floor Technicians" : "Cell Defect Rate"}</h3>
-        <h1 className="ov-val">{isAdmin ? "92.4%" : isSupervisor ? "12 Active" : "0.02%"}</h1>
-        <p className="ov-sub">{isAdmin ? "Across All Departments" : isSupervisor ? "Assigned on Current Shift" : "Target: < 0.10%"}</p>
+        <h3 className="ov-title">Overall Equipment Effectiveness</h3>
+        <h1 className="ov-val">{oeePct.toFixed(1)}%</h1>
+        <p className="ov-sub">
+          Bottleneck: {state.machines.find((m) => m.id === state.bottleneckId)?.code ?? "none"}
+        </p>
         <div className="ov-progress-bar">
-          <div className="ov-fill cyan-glow" style={{ width: "92%" }} />
+          <div className="ov-fill cyan-glow" style={{ width: `${oeePct}%` }} />
         </div>
       </div>
 
@@ -68,11 +73,22 @@ export default function OverviewSection() {
             <FontAwesomeIcon icon={faBrain} /> AUTONOMOUS
           </span>
         </div>
-        <h3 className="ov-title">{isAdmin ? "Autonomous AI Decisions" : isSupervisor ? "Predictive Warnings" : "Shift Time Left"}</h3>
-        <h1 className="ov-val">{isAdmin ? "18" : isSupervisor ? "03" : "2h 45m"}</h1>
-        <p className="ov-sub">{isAdmin ? "Executed System-Wide" : isSupervisor ? "Logged for Preventive Check" : "Shift-A Floor Schedule"}</p>
+        <h3 className="ov-title">AI Actions This Shift</h3>
+        <h1 className="ov-val">{state.autonomousActionsCount + state.humanInterventionsCount}</h1>
+        <p className="ov-sub">
+          {state.autonomousActionsCount} autonomous · {state.humanInterventionsCount} technician dispatches
+        </p>
         <div className="ov-progress-bar">
-          <div className="ov-fill amber-glow" style={{ width: "85%" }} />
+          <div
+            className="ov-fill amber-glow"
+            style={{
+              width: `${
+                state.autonomousActionsCount + state.humanInterventionsCount
+                  ? (state.autonomousActionsCount / (state.autonomousActionsCount + state.humanInterventionsCount)) * 100
+                  : 0
+              }%`,
+            }}
+          />
         </div>
       </div>
     </section>

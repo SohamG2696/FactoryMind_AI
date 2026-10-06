@@ -197,7 +197,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     name: "Administration",
     badge: "ADMIN",
     color: "#f59e0b", // Amber/Gold
-    allowedSections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // Full Access to all 11 sections
+    allowedSections: [0, 1, 2, 3, 4, 5, 6], // Full access to every dashboard section
     canManageUsers: true,
     canEditSettings: true,
     canTrainModels: true,
@@ -207,7 +207,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     name: "Supervisor",
     badge: "SUPERVISOR",
     color: "#06b6d4", // Cyan
-    allowedSections: [0, 1, 2, 4, 5, 6, 7, 8], // Operations, Digital Twin, Floor AI, Machines, Analytics, Maintenance, Alerts, Reports
+    allowedSections: [0, 1, 2, 4], // Dashboard, Digital Twin, AI Agent, Analytics
     canManageUsers: false,
     canEditSettings: false,
     canTrainModels: false,
@@ -217,7 +217,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     name: "User (Operator)",
     badge: "USER",
     color: "#10b981", // Emerald
-    allowedSections: [0, 1, 4, 6, 7], // Operator Dashboard, Assigned Cell Digital Twin, Machine Controls, Shift Maintenance Checklist, Cell Alerts
+    allowedSections: [0, 1], // Operator Dashboard (with alerts), Digital Twin (with maintenance plan)
     canManageUsers: false,
     canEditSettings: false,
     canTrainModels: false,

@@ -1,47 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faIndustry,
   faHeartPulse,
   faTriangleExclamation,
-  faBolt,
-  faMicrochip,
   faRobot,
-  faClipboardCheck,
-  faScrewdriverWrench,
-  faGears,
-  faWaveSquare,
 } from "@fortawesome/free-solid-svg-icons";
-
-function useAnimatedValue(start: number, end: number, duration: number) {
-  const [value, setValue] = useState(start);
-
-  useEffect(() => {
-    const range = end - start;
-    const increment = end > start ? 1 : -1;
-    const stepTime = Math.abs(Math.floor(duration / range));
-    let current = start;
-    const timer = setInterval(() => {
-      current += increment;
-      setValue(current);
-      if (current === end) clearInterval(timer);
-    }, stepTime);
-    return () => clearInterval(timer);
-  }, [start, end, duration]);
-
-  return value;
-}
+import { useSim } from "@/context/FactorySimContext";
+import { summarizePlant, mlSourceLabel, formatAccuracy } from "@/lib/plantMetrics";
 
 export default function KpiSection() {
-  const { user, role } = useAuth();
-  const machineHealth = useAnimatedValue(70, 95, 1500);
-  const confidence = useAnimatedValue(75, 97, 1800);
-
-  const isAdmin = role === "ADMIN";
-  const isSupervisor = role === "SUPERVISOR";
+  const { state, agent, mlHealth } = useSim();
+  const plant = summarizePlant(state, agent.latest?.ml ?? {});
+  const offline = plant.totalCells - plant.runningCells;
 
   return (
     <section className="kpi-section">
@@ -49,19 +21,19 @@ export default function KpiSection() {
       <div className="kpi-card">
         <div className="kpi-card-inner">
           <div className="kpi-top-bar">
-            <span className="kpi-tag-code">TAG: FLEET-26</span>
+            <span className="kpi-tag-code">TAG: FLEET-{String(plant.totalCells).padStart(2, "0")}</span>
             <span className="kpi-live-dot" />
           </div>
           <div className="kpi-main-row">
             <div className="icon blue">
-              <FontAwesomeIcon icon={isAdmin ? faIndustry : isSupervisor ? faGears : faMicrochip} />
+              <FontAwesomeIcon icon={faIndustry} />
             </div>
             <div className="kpi-data-block">
-              <h3>{isAdmin ? "Running Machines" : isSupervisor ? "Supervised Units" : "Assigned Units"}</h3>
+              <h3>Running Cells</h3>
               <h2 id="runningMachines">
-                {isAdmin ? "24 / 26" : isSupervisor ? `${user?.machinesManaged || 16} / 18` : `${user?.machinesManaged || 4} / 4`}
+                {plant.runningCells} / {plant.totalCells}
               </h2>
-              <p>{isAdmin ? "2 Machines Offline" : isSupervisor ? "Line-1 Operating" : "Workcell Live"}</p>
+              <p>{offline === 0 ? "All cells online" : `${offline} in maintenance`}</p>
             </div>
           </div>
         </div>
@@ -71,7 +43,7 @@ export default function KpiSection() {
       <div className="kpi-card">
         <div className="kpi-card-inner">
           <div className="kpi-top-bar">
-            <span className="kpi-tag-code">TAG: OEE-RATE</span>
+            <span className="kpi-tag-code">TAG: HEALTH-AVG</span>
             <span className="kpi-live-dot green" />
           </div>
           <div className="kpi-main-row">
@@ -79,11 +51,15 @@ export default function KpiSection() {
               <FontAwesomeIcon icon={faHeartPulse} />
             </div>
             <div className="kpi-data-block">
-              <h3>{isAdmin ? "Plant Health" : isSupervisor ? "Line OEE Rate" : "Cell Health"}</h3>
-              <h2 id="machineHealth" style={{ color: "#4ADE80" }}>
-                {isAdmin ? `${machineHealth}%` : isSupervisor ? "92.4%" : "98%"}
+              <h3>Plant Health</h3>
+              <h2 id="machineHealth" style={{ color: plant.avgHealth >= 72 ? "#4ADE80" : "#FACC15" }}>
+                {plant.avgHealth.toFixed(0)}%
               </h2>
-              <p>{isAdmin ? "Excellent Condition" : isSupervisor ? "On Shift Target" : "Optimal Tolerance"}</p>
+              <p>
+                {plant.avgFailureProbability !== null
+                  ? `Avg ML failure risk ${(plant.avgFailureProbability * 100).toFixed(1)}%`
+                  : "Average across all cells"}
+              </p>
             </div>
           </div>
         </div>
@@ -93,19 +69,21 @@ export default function KpiSection() {
       <div className="kpi-card">
         <div className="kpi-card-inner">
           <div className="kpi-top-bar">
-            <span className="kpi-tag-code">TAG: ALARM-02</span>
+            <span className="kpi-tag-code">TAG: ALARM-{String(plant.criticalCells).padStart(2, "0")}</span>
             <span className="kpi-live-dot red" />
           </div>
           <div className="kpi-main-row">
             <div className="icon red">
-              <FontAwesomeIcon icon={isAdmin ? faTriangleExclamation : isSupervisor ? faScrewdriverWrench : faClipboardCheck} />
+              <FontAwesomeIcon icon={faTriangleExclamation} />
             </div>
             <div className="kpi-data-block">
-              <h3>{isAdmin ? "Critical Alerts" : isSupervisor ? "Work Orders" : "Shift Tasks"}</h3>
-              <h2 id="criticalAlerts" style={{ color: "#F87171" }}>
-                {isAdmin ? "02" : isSupervisor ? "03" : "5 / 6"}
+              <h3>Critical Alerts</h3>
+              <h2 id="criticalAlerts" style={{ color: plant.criticalCells ? "#F87171" : "#4ADE80" }}>
+                {String(plant.criticalCells).padStart(2, "0")}
               </h2>
-              <p>{isAdmin ? "Immediate Action" : isSupervisor ? "Pending Inspection" : "1 Check Pending"}</p>
+              <p>
+                {plant.criticalCells ? "Immediate action" : "None"} · {plant.warningCells} warning
+              </p>
             </div>
           </div>
         </div>
@@ -120,14 +98,14 @@ export default function KpiSection() {
           </div>
           <div className="kpi-main-row">
             <div className="icon orange">
-              <FontAwesomeIcon icon={isAdmin ? faRobot : isSupervisor ? faBolt : faGears} />
+              <FontAwesomeIcon icon={faRobot} />
             </div>
             <div className="kpi-data-block">
-              <h3>{isAdmin ? "AI Model Accuracy" : isSupervisor ? "Power Quality" : "Tool Wear Life"}</h3>
-              <h2 id="modelConfidence" style={{ color: "#FACC15" }}>
-                {isAdmin ? `${confidence}%` : isSupervisor ? "415 V" : "88%"}
+              <h3>AI Model Accuracy</h3>
+              <h2 id="modelConfidence" style={{ color: "#FACC15" }} title={mlHealth.evaluationMethod ?? undefined}>
+                {formatAccuracy(mlHealth)}
               </h2>
-              <p>{isAdmin ? "LightGBM + Random Forest" : isSupervisor ? "Stable 50 Hz Grid" : "Remaining Life"}</p>
+              <p>LightGBM + Random Forest · {mlSourceLabel(mlHealth, plant.mlLive)}</p>
             </div>
           </div>
         </div>

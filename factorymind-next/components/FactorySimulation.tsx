@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useFactorySim, MachineState, EventCategory } from "@/hooks/useFactorySim";
-import { useCoordinatorAgent } from "@/hooks/useCoordinatorAgent";
+import { MachineState, EventCategory } from "@/hooks/useFactorySim";
+import { useSim } from "@/context/FactorySimContext";
 import FactoryFloorSVG, { FloorLayer } from "@/components/FactoryFloorSVG";
 import ProductionFlowStrip from "@/components/ProductionFlowStrip";
 import AIControlCenter from "@/components/AIControlCenter";
@@ -193,17 +193,10 @@ function ChartCard({ label, val, data, color }: { label: string; val: string; da
 /* ─────────── the page ─────────── */
 export default function FactorySimulation() {
   const { state, play, pause, setSpeed, reset, injectFault, dispatchMaintenance,
-    applyAgentAction, wallClock, wallDate } = useFactorySim();
+    wallClock, wallDate, agent, agentEnabled, setAgentEnabled } = useSim();
   const [inspectId, setInspectId] = useState<string | null>(null);
   const [tab, setTab] = useState<"all" | EventCategory>("all");
-  const [agentEnabled, setAgentEnabled] = useState(true);
   const [layer, setLayer] = useState<FloorLayer>("floor");
-
-  const agent = useCoordinatorAgent(state, {
-    enabled: agentEnabled,
-    intervalMs: 6000,
-    applyAgentAction,
-  });
 
   const inspect = inspectId ? state.machines.find((m) => m.id === inspectId) || null : null;
 

@@ -38,6 +38,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PM_MODEL_PATH = os.path.join(BASE_DIR, "best_pm_model.pkl")
 FACTORY_MODEL_PATH = os.path.join(BASE_DIR, "factory_model.pkl")
 
+# Accuracy measured on the hold-out set when the models were trained. The pickles
+# don't carry their own metrics, so this is the single place the dashboard reads
+# it from (via /health) - update it whenever the models are retrained.
+MODEL_EVALUATION = {
+    "accuracy": 0.974,
+    "method": "Hold-out test set at training time",
+}
+
 # Standard scaler constants for AI4I 2020 Predictive Maintenance feature space
 # Order: [Type_encoded, Air_temperature_K, Process_temperature_K, Rotational_speed_rpm, Torque_Nm, Tool_wear_min,
 #         POWER, DELTA_TEMP, WEAR_TORQUE, SPEED_RATIO, TORQUE_NORM, WEAR_SPEED]
@@ -333,6 +341,7 @@ def health_check():
     return {
         "status": "online",
         "timestamp": datetime.now().isoformat(),
+        "evaluation": MODEL_EVALUATION,
         "models": {
             "best_pm_model": {
                 "loaded": pm_model is not None,

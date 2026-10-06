@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import FactoryMindLogo from "@/components/FactoryMindLogo";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft, faHouse, faIndustry, faFlaskVial, faPlay, faSpinner,
+  faFlaskVial, faPlay, faSpinner,
   faShieldHalved, faArrowTrendUp, faArrowTrendDown, faRobot, faBolt,
   faGears, faTruck, faPeopleGroup, faTemperatureHigh, faLayerGroup,
   faTriangleExclamation,
@@ -94,27 +92,7 @@ export default function ScenarioLabClient() {
   const currentMeta = SCENARIOS.find((s) => s.key === activeScenario);
 
   return (
-    <div className="sim-page-wrapper">
-      <div className="background-grid" />
-
-      <header className="sim-topbar">
-        <div className="sim-topbar-brand">
-          <FactoryMindLogo width={32} height={32} />
-          <div>
-            <div className="sim-brand-title">FactoryMind AI</div>
-            <div className="sim-brand-subtitle">WHAT-IF SCENARIO LAB · AI vs BASELINE</div>
-          </div>
-        </div>
-        <div className="sim-topbar-center">
-          <span className="dt-pulse" />
-          <span>DETERMINISTIC PHYSICS · 200-TICK PARALLEL RUNS</span>
-        </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary"><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
-          <Link href="/simulation" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
-          <Link href="/" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
-        </div>
-      </header>
+    <div className="sim-page-wrapper sim-embedded">
 
       <main className="sim-main-container">
         <div className="sim-hub-banner">

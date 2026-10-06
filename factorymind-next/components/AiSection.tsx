@@ -1,62 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSim } from "@/context/FactorySimContext";
+import { summarizePlant, mlSourceLabel, formatAccuracy } from "@/lib/plantMetrics";
+
+/** Rough remaining-useful-life estimate (sim hours) from tool wear and ML failure risk. */
+function estimateRulHours(toolWear: number, failureProb: number): number {
+  const wearLeft = Math.max(0, 100 - toolWear) / 100;
+  return Math.max(1, Math.round(wearLeft * (1 - failureProb) * 48));
+}
 
 export default function AiSection() {
-  const [failurePrediction, setFailurePrediction] = useState(88);
-  const [rulValue, setRulValue] = useState("16 hrs");
-  const [healthScore, setHealthScore] = useState(62);
-  const [operationalStatus, setOperationalStatus] = useState("Warning / Alert");
-  const [confidence, setConfidence] = useState(96);
+  const { state, agent, mlHealth } = useSim();
+  const ml = agent.latest?.ml ?? {};
+  const plant = summarizePlant(state, ml);
+  const m = plant.riskiest;
+  const pred = m ? ml[m.code] : undefined;
 
-  useEffect(() => {
-    const fetchPrediction = async () => {
-      try {
-        const payload = {
-          mode: "chained",
-          data: {
-            type_encoded: 0,
-            air_temperature_k: 304.0,
-            process_temperature_k: 314.5,
-            rotational_speed_rpm: 1320,
-            torque_nm: 62.0,
-            tool_wear_min: 190,
-            machine_id: 7,
-            vibration_hz: 3.8,
-            error_rate_pct: 4.8,
-            production_speed_uph: 190.0,
-          },
-        };
-
-        const res = await fetch("/api/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.pipeline) {
-            const pm = data.pipeline.predictive_maintenance;
-            const fac = data.pipeline.factory_operational_status;
-            setFailurePrediction(Math.round(pm.failure_probability * 100));
-            setHealthScore(Math.round(pm.health_score));
-            setOperationalStatus(fac.operational_status);
-            setConfidence(Math.round(fac.confidence));
-            // Remaining useful life estimated from wear & failure prob
-            const estRul = Math.max(4, Math.round((250 - 190) * (1 - pm.failure_probability) * 0.4 + 8));
-            setRulValue(`${estRul} hrs`);
-          }
-        }
-      } catch {
-        // Use default fallback values
-      }
-    };
-
-    fetchPrediction();
-    const id = setInterval(fetchPrediction, 8000);
-    return () => clearInterval(id);
-  }, []);
+  const failurePct = pred ? Math.round(pred.failureProbability * 100) : null;
+  const healthScore = pred?.healthScore ?? m?.health ?? null;
+  const machineActions = agent.latest?.actions.filter((a) => a.args?.machineCode === m?.code) ?? [];
 
   return (
     <section className="ai-section">
@@ -64,56 +26,78 @@ export default function AiSection() {
       <div className="ai-left">
         <div className="section-title">
           <h2>🧠 Agentic AI Control Center</h2>
-          <p>Autonomous Decision Making Engine · Powered by LightGBM & Random Forest</p>
+          <p>
+            Autonomous Decision Making Engine · LightGBM & Random Forest ·{" "}
+            {mlSourceLabel(mlHealth, plant.mlLive)}
+          </p>
         </div>
 
         <div className="reasoning-card">
           <div className="reason-header">
-            <h3>AI Reasoning Process</h3>
-            <span className="live-tag">LIVE ML</span>
+            <h3>AI Reasoning Process{m ? ` · ${m.code} ${m.label}` : ""}</h3>
+            <span className="live-tag">{plant.mlLive ? "LIVE ML" : "LIVE"}</span>
           </div>
 
-          <div className="timeline">
-            <div className="timeline-item">
-              <div className="timeline-icon red" />
-              <div>
-                <h4>Thermal Gradient Anomaly</h4>
-                <p>Process Temp 314.5 K (+10.5 K delta) on CNC-07</p>
+          {!m ? (
+            <p>Waiting for simulation data…</p>
+          ) : (
+            <div className="timeline">
+              <div className="timeline-item">
+                <div className="timeline-icon red" />
+                <div>
+                  <h4>Thermal & Vibration Telemetry</h4>
+                  <p>
+                    {m.temperature.toFixed(1)}°C (ambient {m.ambient.toFixed(0)}°C) · vibration{" "}
+                    {m.vibration.toFixed(2)} mm/s · {m.rpm.toFixed(0)} RPM
+                  </p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon orange" />
+                <div>
+                  <h4>Tool Wear & Load</h4>
+                  <p>
+                    Wear {m.toolWear.toFixed(0)}% · utilisation {(m.utilization * 100).toFixed(0)}% · queue {m.queue}
+                  </p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon yellow" />
+                <div>
+                  <h4>LightGBM Failure Model</h4>
+                  <p>
+                    {pred
+                      ? `Failure probability ${(pred.failureProbability * 100).toFixed(1)}% · risk ${pred.riskLevel}`
+                      : agent.busy
+                      ? "Scoring current telemetry…"
+                      : "Waiting for the first agent cycle"}
+                  </p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon blue" />
+                <div>
+                  <h4>Random Forest Status Model</h4>
+                  <p>
+                    {pred?.operationalStatus
+                      ? `${pred.operationalStatus} · ${pred.confidence.toFixed(1)}% confidence`
+                      : "Not available from fallback model"}
+                  </p>
+                </div>
+              </div>
+              <div className="timeline-item">
+                <div className="timeline-icon green" />
+                <div>
+                  <h4>Agent Action</h4>
+                  <p>
+                    {machineActions.length
+                      ? machineActions.map((a) => `${a.agentName}: ${a.reason}`).join(" · ")
+                      : "No action this cycle — within tolerance"}
+                  </p>
+                </div>
               </div>
             </div>
-
-            <div className="timeline-item">
-              <div className="timeline-icon orange" />
-              <div>
-                <h4>Vibration & Tool Wear</h4>
-                <p>Wear reached 190 min · Torque elevated at 62 Nm</p>
-              </div>
-            </div>
-
-            <div className="timeline-item">
-              <div className="timeline-icon yellow" />
-              <div>
-                <h4>Feature Engineering</h4>
-                <p>POWER: 81.8 kW · WEAR_TORQUE: 11,780 · TORQUE_NORM: 0.047</p>
-              </div>
-            </div>
-
-            <div className="timeline-item">
-              <div className="timeline-icon blue" />
-              <div>
-                <h4>LightGBM Inference</h4>
-                <p>Failure Probability: {failurePrediction}% · Status: {operationalStatus}</p>
-              </div>
-            </div>
-
-            <div className="timeline-item">
-              <div className="timeline-icon green" />
-              <div>
-                <h4>Maintenance Action</h4>
-                <p>Technician Dispatched · Spindle & Bearing Inspection Scheduled</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -121,30 +105,38 @@ export default function AiSection() {
       <div className="ai-right">
         <div className="prediction-card">
           <h3>Failure Prediction</h3>
-          <h1 id="failurePrediction" style={{ color: failurePrediction > 50 ? "#F87171" : "#4ADE80" }}>
-            {failurePrediction}%
+          <h1 id="failurePrediction" style={{ color: (failurePct ?? 0) > 50 ? "#F87171" : "#4ADE80" }}>
+            {failurePct !== null ? `${failurePct}%` : "—"}
           </h1>
-          <p>{failurePrediction > 50 ? "High Risk (LightGBM)" : "Low Risk (LightGBM)"}</p>
+          <p>
+            {failurePct === null ? "Awaiting LightGBM" : failurePct > 50 ? "High Risk (LightGBM)" : "Low Risk (LightGBM)"}
+          </p>
         </div>
-
         <div className="prediction-card">
           <h3>Remaining Useful Life</h3>
-          <h1 id="rulValue">{rulValue}</h1>
-          <p>Estimated Useful Time</p>
-        </div>
-
-        <div className="prediction-card">
-          <h3>Health Score</h3>
-          <h1 id="healthScore" style={{ color: healthScore < 70 ? "#FACC15" : "#4ADE80" }}>
-            {healthScore}%
+          <h1 id="rulValue">
+            {m && pred ? `${estimateRulHours(m.toolWear, pred.failureProbability)} hrs` : "—"}
           </h1>
-          <p>{healthScore < 70 ? "Needs Maintenance" : "Optimal Condition"}</p>
+          <p>Estimate from tool wear × failure risk</p>
         </div>
-
         <div className="prediction-card">
-          <h3>Model Confidence</h3>
-          <h1>{confidence}%</h1>
-          <p>Random Forest Accuracy</p>
+          <h3>ML Health Score</h3>
+          <h1 id="healthScore" style={{ color: (healthScore ?? 100) < 70 ? "#FACC15" : "#4ADE80" }}>
+            {healthScore !== null ? `${Math.round(healthScore)}%` : "—"}
+          </h1>
+          <p>
+            LightGBM {(healthScore ?? 100) < 70 ? "· needs maintenance" : "· optimal"}
+            {m ? ` · sensor health ${m.health.toFixed(0)}%` : ""}
+          </p>
+        </div>
+        <div className="prediction-card" title={mlHealth.evaluationMethod ?? undefined}>
+          <h3>Model Accuracy</h3>
+          <h1>{formatAccuracy(mlHealth)}</h1>
+          <p>
+            {pred?.operationalStatus
+              ? `Hold-out test · this call ${pred.confidence.toFixed(0)}% confident`
+              : "Hold-out test set"}
+          </p>
         </div>
       </div>
     </section>

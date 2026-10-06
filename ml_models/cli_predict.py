@@ -28,7 +28,8 @@ from ml_service import (
     predict_chained,
     predict_pm,
     predict_factory,
-    PMSensorInput
+    PMSensorInput,
+    health_check,
 )
 
 # Restore stdout
@@ -54,7 +55,9 @@ def main():
         mode = payload.get("mode", "chained")
         data = payload.get("data", {})
 
-        if mode == "pm":
+        if mode == "health":
+            res = health_check()
+        elif mode == "pm":
             inp = PMSensorInput(**data)
             res = predict_pm(inp)
         elif mode == "factory":

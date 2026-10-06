@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import FactoryMindLogo from "@/components/FactoryMindLogo";
 import { useWorkers, Worker } from "@/hooks/useWorkers";
 import { useMissions, Mission } from "@/hooks/useMissions";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faArrowLeft, faHouse, faIndustry, faPeopleGroup, faSpinner, faDatabase,
+  faPeopleGroup, faSpinner, faDatabase,
   faCircleCheck, faExclamation, faClock, faRobot, faShieldHalved,
   faLayerGroup, faSignal, faBell, faUserGear, faGears, faScrewdriverWrench,
   faTriangleExclamation, faArrowRight,
@@ -118,27 +117,7 @@ export default function ManpowerClient() {
   };
 
   return (
-    <div className="sim-page-wrapper">
-      <div className="background-grid" />
-
-      <header className="sim-topbar">
-        <div className="sim-topbar-brand">
-          <FactoryMindLogo width={32} height={32} />
-          <div>
-            <div className="sim-brand-title">FactoryMind AI</div>
-            <div className="sim-brand-subtitle">INTELLIGENT WORKFORCE CONTROL</div>
-          </div>
-        </div>
-        <div className="sim-topbar-center">
-          <span className="dt-pulse" />
-          <span>HUMAN INTERVENTION AS A SERVICE · LIVE FROM MONGODB</span>
-        </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary"><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
-          <Link href="/simulation" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
-          <Link href="/" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
-        </div>
-      </header>
+    <div className="sim-page-wrapper sim-embedded">
 
       <main className="sim-main-container">
         {/* Hero */}

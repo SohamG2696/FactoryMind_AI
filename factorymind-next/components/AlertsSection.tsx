@@ -1,66 +1,79 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleExclamation,
   faTriangleExclamation,
   faCircleCheck,
 } from "@fortawesome/free-solid-svg-icons";
+import { useSim } from "@/context/FactorySimContext";
+import type { SimEvent } from "@/hooks/useFactorySim";
 
-const alertMessages = [
-  "Robot Arm Working Normally",
-  "Temperature Stabilized",
-  "Warehouse Inventory Updated",
-  "Energy Consumption Optimized",
-  "AI Inspection Completed",
-  "Predictive Maintenance Completed",
-];
+const KIND_STYLE: Record<Exclude<SimEvent["kind"], "info">, { cls: string; icon: typeof faCircleCheck }> = {
+  crit: { cls: "critical", icon: faCircleExclamation },
+  warn: { cls: "warning", icon: faTriangleExclamation },
+  ok: { cls: "success", icon: faCircleCheck },
+};
 
-const initial = [
-  "CNC-07 Temperature Critical",
-  "Conveyor Belt Alignment Warning",
-  "Robot Arm Calibration Completed",
-];
+const MAX_ALERTS = 5;
+
+/** Sim minutes elapsed since an event, as "just now" / "4 min ago" / "1h 10m ago". */
+function sinceLabel(ticksAgo: number, secondsPerTick: number): string {
+  const mins = Math.floor((ticksAgo * secondsPerTick) / 60);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+}
 
 export default function AlertsSection() {
-  const [titles, setTitles] = useState(initial);
+  const { state } = useSim();
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTitles((prev) => {
-        const next = [...prev];
-        const idx = Math.floor(Math.random() * next.length);
-        next[idx] = alertMessages[Math.floor(Math.random() * alertMessages.length)];
-        return next;
-      });
-    }, 6000);
-    return () => clearInterval(id);
-  }, []);
-
-  const alertDefs = [
-    { cls: "critical", icon: faCircleExclamation, sub: "Detected 30 seconds ago" },
-    { cls: "warning", icon: faTriangleExclamation, sub: "Detected 2 minutes ago" },
-    { cls: "success", icon: faCircleCheck, sub: "Completed 10 minutes ago" },
-  ];
+  // Events are stored newest-first. "info" entries and part-flow completions are
+  // routine log lines; alerts are warnings, criticals and machine recoveries.
+  const alerts = state.events
+    .filter((e) => e.kind !== "info" && e.category !== "flow")
+    .slice(0, MAX_ALERTS);
+  const critical = state.machines.filter((m) => m.status === "critical" || m.status === "downtime").length;
+  const warning = state.machines.filter((m) => m.status === "warning").length;
 
   return (
     <section className="alerts-section">
       <div className="alerts-card">
-        <div className="section-title">
+        <div className="section-title live-card-title">
           <h2>🚨 Real-Time Alerts</h2>
+          <span className="live-pill">
+            <span className="live-dot" /> LIVE · {critical} critical · {warning} warning
+          </span>
         </div>
-        {alertDefs.map((a, i) => (
-          <div key={i} className={`alert ${a.cls}`}>
+
+        {alerts.length === 0 && (
+          <div className="alert success">
             <span className="alert-icon">
-              <FontAwesomeIcon icon={a.icon} />
+              <FontAwesomeIcon icon={faCircleCheck} />
             </span>
             <div>
-              <h4>{titles[i]}</h4>
-              <p>{a.sub}</p>
+              <h4>All cells nominal</h4>
+              <p>No warnings raised this shift</p>
             </div>
           </div>
-        ))}
+        )}
+
+        {alerts.map((e) => {
+          const style = KIND_STYLE[e.kind as keyof typeof KIND_STYLE];
+          return (
+            <div key={`${e.t}-${e.msg}`} className={`alert ${style.cls}`}>
+              <span className="alert-icon">
+                <FontAwesomeIcon icon={style.icon} />
+              </span>
+              <div>
+                <h4>{e.msg}</h4>
+                <p>
+                  {e.wallClock} · {sinceLabel(state.tick - e.t, state.simSecondsPerTick)}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
