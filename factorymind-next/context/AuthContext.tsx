@@ -15,6 +15,7 @@ export interface UserAccount {
   status: "Active" | "Idle" | "Offline";
   lastActive?: string;
   machinesManaged?: number;
+  assignedCells?: string[]; // e.g. ["CELL-01", "CELL-04"]
   fixedClearance?: boolean; // Cannot be deleted or modified (Fixed plant leadership)
   password?: string; // Account security password (Format: Name@123)
   /** Operators only — the machine cell (e.g. "CELL-04") they are staffed on. */
@@ -251,6 +252,7 @@ interface AuthContextType {
   canAccessSection: (sectionIndex: number) => boolean;
   addUser: (newUser: Omit<UserAccount, "id">) => boolean;
   updateUserRole: (userId: string, newRole: UserRole) => boolean;
+  updateUserAssignedCells: (userId: string, cells: string[]) => boolean;
   toggleUserStatus: (userId: string) => void;
   deleteUser: (userId: string) => boolean;
 }
@@ -408,6 +410,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  const updateUserAssignedCells = (userId: string, cells: string[]): boolean => {
+    const target = usersList.find((u) => u.id === userId);
+    if (!target) return false;
+
+    const updated = usersList.map((u) =>
+      u.id === userId
+        ? { ...u, assignedCells: cells, machinesManaged: cells.length }
+        : u
+    );
+    saveUsersList(updated);
+    if (user?.id === userId) {
+      saveUserSession({ ...user, assignedCells: cells, machinesManaged: cells.length });
+    }
+    return true;
+  };
+
   const toggleUserStatus = (userId: string) => {
     const updated = usersList.map((u) => {
       if (u.id === userId) {
@@ -453,6 +471,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         canAccessSection,
         addUser,
         updateUserRole,
+        updateUserAssignedCells,
         toggleUserStatus,
         deleteUser,
       }}

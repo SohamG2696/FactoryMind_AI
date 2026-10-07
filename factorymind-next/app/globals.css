@@ -1618,10 +1618,90 @@ body {
    Digital Twin View
 ================================ */
 
+.digital-twin-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
 .digital-twin-section {
   display: grid;
   grid-template-columns: 1fr 340px;
   gap: 20px;
+  align-items: start;
+}
+
+.dt-primary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.dt-secondary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dt-shift-briefing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.dt-sbc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-sbc-icon {
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.dt-sbc-header h4 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.dt-sbc-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.dt-sbc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--success);
+  background: rgba(63, 122, 95, 0.12);
+  border: 1px solid rgba(63, 122, 95, 0.25);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  margin-top: 4px;
+}
+
+.dt-sbc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
 }
 
 @media (max-width: 1100px) {

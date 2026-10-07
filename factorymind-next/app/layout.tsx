@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { OperatorTaskProvider } from "@/context/OperatorTaskContext";
 
 export default function RootLayout({
   children,
@@ -37,7 +38,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <OperatorTaskProvider>{children}</OperatorTaskProvider>
+        </AuthProvider>
       </body>
     </html>
   );

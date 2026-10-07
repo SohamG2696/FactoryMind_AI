@@ -463,12 +463,17 @@ function AGVGlyph({ agv }: { agv: AGV }) {
 /* ────────── Machine status pill anchored under a machine ────────── */
 function MachineStatusLabel({ m }: { m: MachineState }) {
   const dot = STATUS_DOT[m.status];
-  const boxWidth = 190;
+  const boxWidth = 200;
+  const { getAssignedOperatorForCell, getTasksForCell } = useOperatorTasks();
+  const assignedOp = getAssignedOperatorForCell(m.code);
+  const cellTasks = getTasksForCell(m.code);
+  const activeTasksCount = cellTasks.filter((t) => t.status !== "completed").length;
+
   return (
     <g transform={`translate(${m.x - boxWidth / 2}, ${m.y + 90})`}>
       <rect
         width={boxWidth}
-        height="42"
+        height="46"
         rx="6"
         fill="#FFFFFF"
         stroke={BORDER}
@@ -477,14 +482,17 @@ function MachineStatusLabel({ m }: { m: MachineState }) {
       <text x="10" y="16" fill={INK} fontSize="11" fontWeight="700">
         ● {m.shortLabel}
       </text>
-      <circle cx="16" cy="30" r="3" fill={dot}>
+      <text x={boxWidth - 10} y="15" textAnchor="end" fill="#B85A1F" fontSize="9.5" fontWeight="700" fontFamily="monospace">
+        👤 {assignedOp ? assignedOp.name.split(" ")[0] : "Op"}
+      </text>
+      <circle cx="16" cy="31" r="3" fill={dot}>
         <animate attributeName="opacity" values="0.4;1;0.4" dur="1.2s" repeatCount="indefinite" />
       </circle>
-      <text x="26" y="33" fill={INK_MID} fontSize="10">
+      <text x="26" y="34" fill={INK_MID} fontSize="10">
         {m.statusText}
       </text>
-      <text x={boxWidth - 10} y="33" textAnchor="end" fill={INK_SOFT} fontSize="10" fontFamily="monospace">
-        Queue: {m.queue}
+      <text x={boxWidth - 10} y="34" textAnchor="end" fill={activeTasksCount > 0 ? "#C87D1F" : INK_SOFT} fontSize="9" fontFamily="monospace" fontWeight="600">
+        {activeTasksCount > 0 ? `⚡ ${activeTasksCount} Task${activeTasksCount > 1 ? "s" : ""}` : `Queue: ${m.queue}`}
       </text>
     </g>
   );
