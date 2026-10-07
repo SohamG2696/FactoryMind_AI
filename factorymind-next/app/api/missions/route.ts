@@ -9,6 +9,9 @@ import { getDb, COLLECTIONS } from "@/lib/mongo";
  * GET   /api/missions?id=M284
  * POST  /api/missions           — create
  * PATCH /api/missions           — { id, patch }
+ * PATCH /api/missions           — { cancelOpen: true, machineCode? } cancels open missions
+ *
+ * Completing or cancelling a mission releases its technician back to "available".
  */
 
 export interface Mission {
@@ -23,6 +26,9 @@ export interface Mission {
   assignedWorkerName?: string;
   agentName?: string;
   agentReasoning?: string;
+  diagnosis?: string;
+  evidence?: string[];
+  recommendedPlan?: { step: string; autonomy: string }[];
   mlPrediction?: {
     failureProbability?: number;
     riskLevel?: string;
@@ -109,14 +115,45 @@ export async function POST(req: NextRequest) {
   }
 }
 
+const CLOSED = ["complete", "cancelled"];
+
+/** Put a mission's technician back in the available pool. */
+async function releaseWorker(db: any, workerId: string | undefined) {
+  if (!workerId) return;
+  await db.collection(COLLECTIONS.workers).updateOne(
+    { id: workerId },
+    { $set: { status: "available", workload: 0 }, $unset: { currentMissionId: "", currentTarget: "" } }
+  );
+}
+
 export async function PATCH(req: NextRequest) {
   try {
-    const { id, patch, timelineNote } = await req.json();
+    const body = await req.json();
+    const db = await getDb();
+
+    if (body.cancelOpen) {
+      const q: Record<string, unknown> = { status: { $nin: CLOSED } };
+      if (body.machineCode) q.machineCode = body.machineCode;
+      const open = await db.collection(COLLECTIONS.missions).find(q, { projection: { _id: 0 } }).toArray();
+      const now = new Date().toISOString();
+      for (const m of open as any[]) {
+        await db.collection(COLLECTIONS.missions).updateOne(
+          { id: m.id },
+          {
+            $set: { status: "cancelled", updatedAt: now },
+            $push: { timeline: { at: now, status: "cancelled", note: body.note || "Cancelled by simulation reset" } },
+          } as any
+        );
+        await releaseWorker(db, m.assignedWorkerId);
+      }
+      return NextResponse.json({ ok: true, cancelled: open.length });
+    }
+
+    const { id, patch, timelineNote } = body;
     if (!id || !patch) {
       return NextResponse.json({ ok: false, error: "id + patch required" }, { status: 400 });
     }
     const now = new Date().toISOString();
-    const db = await getDb();
     const update: Record<string, unknown> = { $set: { ...patch, updatedAt: now } };
     if (patch.status) {
       (update.$push as any) = { timeline: { at: now, status: patch.status, note: timelineNote } };
@@ -127,6 +164,7 @@ export async function PATCH(req: NextRequest) {
     const updated = await db
       .collection(COLLECTIONS.missions)
       .findOne({ id }, { projection: { _id: 0 } });
+    if (updated && CLOSED.includes(patch.status)) await releaseWorker(db, (updated as any).assignedWorkerId);
     return NextResponse.json({ ok: true, mission: updated });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err?.message }, { status: 500 });

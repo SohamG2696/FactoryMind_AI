@@ -118,7 +118,7 @@ export default function DashboardNav({ pageTitle, sidebarOpen, setSidebarOpen, o
             <span className="ticker-pulse-dot" />
             <span className="ticker-label">ML:</span>
             <span className="ticker-val">
-              {mlHealth.online === null ? "CONNECTING" : plant.mlLive ? "LIVE INFERENCE" : mlHealth.online ? "ONLINE" : "FALLBACK"}
+              {mlHealth.online === null ? "CONNECTING" : plant.mlLive ? "LIVE INFERENCE" : mlHealth.online ? "ONLINE" : "OFFLINE · FALLBACK"}
             </span>
           </div>
           <div className="ticker-sep">|</div>

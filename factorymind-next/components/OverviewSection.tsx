@@ -14,7 +14,7 @@ export default function OverviewSection() {
   const oeePct = state.oee * 100;
   const downtimeMin = Math.round((state.totalDowntime * state.simSecondsPerTick) / 60);
   const elapsedMin = Math.max(1, Math.round((state.tick * state.simSecondsPerTick) / 60));
-  const cellMinutes = elapsedMin * Math.max(1, state.machines.length);
+  const cellMinutes = elapsedMin * Math.max(1, state.machines.filter((m) => !m.standby).length);
   const availabilityPct = Math.max(0, 100 - (downtimeMin / cellMinutes) * 100);
 
   return (

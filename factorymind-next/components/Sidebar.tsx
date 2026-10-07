@@ -149,7 +149,9 @@ export default function Sidebar({ active, onSelect, isOpen, setIsOpen }: Sidebar
                 >
                   <span className="sidebar-item-code">{item.code}</span>
                   <FontAwesomeIcon icon={item.icon} className="sidebar-item-icon" />
-                  <span className="sidebar-item-label">{item.label}</span>
+                  <span className="sidebar-item-label">
+                    {role === "USER" && item.route === "/simulation" ? "My Workcell" : item.label}
+                  </span>
                   {item.tag && <span className="sidebar-item-tag">{item.tag}</span>}
                   {!hasAccess && (
                     <span className="sidebar-lock-badge" title={`Locked — ${item.minRole} password required`}>

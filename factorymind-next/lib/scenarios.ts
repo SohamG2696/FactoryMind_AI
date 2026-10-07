@@ -26,6 +26,10 @@ export interface ScenarioResult {
   totalProduced: number;
   humanInterventions: number;
   criticalIncidents: number;
+  /** Average sim-minutes a machine spent between entering critical (health < 45) and recovering (≥ 72 or back online after repair). */
+  recoveryMinutes: number;
+  /** Hard failures — machines that degraded until they broke down (health < 25). */
+  unplannedBreakdowns: number;
   peakBottleneck: string | null;
 }
 
@@ -152,6 +156,9 @@ export function runScenario(input: ScenarioInput): ScenarioResult {
   const activeInterventions = { count: 0, total: 0 };
   const oeeSamples: number[] = [];
   const bottleneckCounts = new Map<string, number>();
+  const criticalSince = new Map<string, number>();
+  const recoveryTicks: number[] = [];
+  let unplannedBreakdowns = 0;
 
   for (let tick = 0; tick < ticks; tick++) {
     applyScenario(machines, input.scenario, tick);
@@ -162,7 +169,17 @@ export function runScenario(input: ScenarioInput): ScenarioResult {
     // AI mitigation phase (only if enabled) — reduces failures
     if (input.aiEnabled) aiMitigate(machines, workerCap, activeInterventions);
 
+    const wasDown = new Set(machines.filter((m) => m.downtimeTicksLeft > 0).map((m) => m.code));
     tickPhysics(machines);
+    for (const m of machines) {
+      if (m.downtimeTicksLeft > 0 && !wasDown.has(m.code) && m.health < 25) unplannedBreakdowns++;
+      const since = criticalSince.get(m.code);
+      if (since === undefined && m.health < 45) criticalSince.set(m.code, tick);
+      if (since !== undefined && (m.health >= 72 || (m.downtimeTicksLeft === 0 && wasDown.has(m.code)))) {
+        recoveryTicks.push(tick - since);
+        criticalSince.delete(m.code);
+      }
+    }
 
     // Decrement active interventions when machines come back online
     activeInterventions.count = machines.filter((m) => m.downtimeTicksLeft > 0).length;
@@ -205,6 +222,10 @@ export function runScenario(input: ScenarioInput): ScenarioResult {
     totalProduced,
     humanInterventions: activeInterventions.total,
     criticalIncidents,
+    recoveryMinutes: recoveryTicks.length
+      ? Number(((recoveryTicks.reduce((a, b) => a + b, 0) / recoveryTicks.length) * 0.5).toFixed(1))
+      : 0,
+    unplannedBreakdowns,
     peakBottleneck,
   };
 }

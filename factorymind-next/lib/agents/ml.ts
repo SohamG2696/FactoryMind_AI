@@ -46,7 +46,9 @@ function toPredictInput(m: MachineSnap, index: number): PredictInput {
     vibration_hz: m.vibration,
     error_rate_pct: (100 - m.health) / 10,
     qc_defect_rate_pct: (100 - m.health) / 12,
-    production_speed_uph: (300 * m.utilization) / 0.7,
+    // Sustainable production rate: nominal 300 u/h derated by cell health. (Queue
+    // utilisation is not used — a healthy but under-fed machine is not degraded.)
+    production_speed_uph: 300 * (0.6 + 0.4 * (m.health / 100)),
   };
 }
 

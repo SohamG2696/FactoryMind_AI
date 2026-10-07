@@ -19,6 +19,10 @@ export interface MachineSnap {
   queue: number;
   utilization: number;
   rpm: number;
+  capacity?: number;
+  /** Standby capacity outside the normal line. */
+  standby?: boolean;
+  isolated?: boolean;
 }
 
 export interface AgvSnap {
@@ -42,6 +46,10 @@ export interface PlantSnapshot {
   currentPartId: string;
   /** Active worker missions the agent has open (from Mongo). */
   activeMissionMachineCodes?: string[];
+  throughputPerHour?: number;
+  /** Active reroute (machine codes), e.g. { from: "CELL-04", to: "CELL-07" }. */
+  reroute?: { from: string; to: string } | null;
+  throttled?: boolean;
 }
 
 export type ToolName =
@@ -58,6 +66,9 @@ export type ToolName =
   | "resume_machine"
   | "reroute_material"
   | "create_mission"
+  | "activate_backup_route"
+  | "restore_route"
+  | "rebalance_material"
   | "note";
 
 export interface AgentAction {

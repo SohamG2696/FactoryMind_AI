@@ -37,6 +37,8 @@ interface ScenarioResult {
   totalProduced: number;
   humanInterventions: number;
   criticalIncidents: number;
+  recoveryMinutes: number;
+  unplannedBreakdowns: number;
   peakBottleneck: string | null;
 }
 
@@ -90,6 +92,10 @@ export default function ScenarioLabClient() {
   };
 
   const currentMeta = SCENARIOS.find((s) => s.key === activeScenario);
+
+  const base = result?.baseline;
+  const withAi = result?.withAi;
+  const vis = base && withAi ? visibleMetrics(base, withAi) : { shown: [], hidden: [] };
 
   return (
     <div className="sim-page-wrapper sim-embedded">
@@ -175,9 +181,11 @@ export default function ScenarioLabClient() {
 
             {/* Side-by-side comparison */}
             <div className="scenario-compare">
-              <ScenarioColumn label="BASELINE" sublabel="No AI intervention" tone="baseline" r={result.baseline} />
+              <ScenarioColumn label="BASELINE" sublabel="No AI intervention" tone="baseline" r={result.baseline}
+                metrics={vis.shown} />
               <div className="scenario-vs">VS</div>
-              <ScenarioColumn label="WITH AI" sublabel="Supervisor Agent active" tone="ai" r={result.withAi} />
+              <ScenarioColumn label="WITH AI" sublabel="Supervisor Agent active" tone="ai" r={result.withAi}
+                metrics={vis.shown} />
             </div>
 
             {/* Metric comparison bars */}
@@ -190,13 +198,16 @@ export default function ScenarioLabClient() {
                 </span>
               </div>
               <div className="scenario-delta-grid">
-                <DeltaBar label="OEE" before={result.baseline.oee * 100} after={result.withAi.oee * 100} unit="%" higherIsBetter />
-                <DeltaBar label="Throughput" before={result.baseline.throughputPerHour} after={result.withAi.throughputPerHour} unit="/hr" higherIsBetter />
-                <DeltaBar label="Total produced" before={result.baseline.totalProduced} after={result.withAi.totalProduced} unit="" higherIsBetter />
-                <DeltaBar label="Downtime" before={result.baseline.downtimeMinutes} after={result.withAi.downtimeMinutes} unit="min" higherIsBetter={false} />
-                <DeltaBar label="Critical incidents" before={result.baseline.criticalIncidents} after={result.withAi.criticalIncidents} unit="" higherIsBetter={false} />
-                <DeltaBar label="Human interventions" before={result.baseline.humanInterventions} after={result.withAi.humanInterventions} unit="" higherIsBetter={false} showEvenWhenZero />
+                {vis.shown.map((m) => (
+                  <DeltaBar key={m.key} label={m.label} before={m.get(base!)} after={m.get(withAi!)}
+                    unit={m.unit} higherIsBetter={m.higherIsBetter} />
+                ))}
               </div>
+              {vis.hidden.length > 0 && (
+                <p className="scenario-hidden-note">
+                  Not shown — zero in both runs: {vis.hidden.map((m) => m.label.toLowerCase()).join(", ")}.
+                </p>
+              )}
             </div>
           </>
         )}
@@ -205,9 +216,31 @@ export default function ScenarioLabClient() {
   );
 }
 
+/** Every comparable metric. A metric that is zero in both runs says nothing
+ *  about this scenario, so it is left out of the comparison. */
+const METRICS: {
+  key: string; label: string; unit: string; higherIsBetter: boolean;
+  get: (r: ScenarioResult) => number; fmt: (r: ScenarioResult) => string;
+}[] = [
+  { key: "oee", label: "OEE", unit: "%", higherIsBetter: true, get: (r) => r.oee * 100, fmt: (r) => `${(r.oee * 100).toFixed(1)}%` },
+  { key: "tp", label: "Throughput", unit: "/hr", higherIsBetter: true, get: (r) => r.throughputPerHour, fmt: (r) => `${r.throughputPerHour}/hr` },
+  { key: "prod", label: "Total produced", unit: "", higherIsBetter: true, get: (r) => r.totalProduced, fmt: (r) => String(r.totalProduced) },
+  { key: "down", label: "Downtime", unit: "min", higherIsBetter: false, get: (r) => r.downtimeMinutes, fmt: (r) => `${r.downtimeMinutes} min` },
+  { key: "crit", label: "Critical incidents", unit: "", higherIsBetter: false, get: (r) => r.criticalIncidents, fmt: (r) => String(r.criticalIncidents) },
+  { key: "brk", label: "Unplanned breakdowns", unit: "", higherIsBetter: false, get: (r) => r.unplannedBreakdowns, fmt: (r) => String(r.unplannedBreakdowns) },
+  { key: "rec", label: "Recovery time from critical", unit: "min", higherIsBetter: false, get: (r) => r.recoveryMinutes, fmt: (r) => (r.recoveryMinutes ? `${r.recoveryMinutes} min` : "—") },
+  { key: "hum", label: "Human interventions", unit: "", higherIsBetter: false, get: (r) => r.humanInterventions, fmt: (r) => String(r.humanInterventions) },
+];
+
+function visibleMetrics(a: ScenarioResult, b: ScenarioResult) {
+  const shown = METRICS.filter((m) => m.get(a) !== 0 || m.get(b) !== 0);
+  const hidden = METRICS.filter((m) => !shown.includes(m));
+  return { shown, hidden };
+}
+
 function ScenarioColumn({
-  label, sublabel, tone, r,
-}: { label: string; sublabel: string; tone: "baseline" | "ai"; r: ScenarioResult }) {
+  label, sublabel, tone, r, metrics,
+}: { label: string; sublabel: string; tone: "baseline" | "ai"; r: ScenarioResult; metrics: typeof METRICS }) {
   const accent = tone === "ai" ? "var(--primary)" : "var(--info)";
   return (
     <div className="scenario-column" style={{ borderTopColor: accent }}>
@@ -219,13 +252,10 @@ function ScenarioColumn({
         <div className="scenario-column-sub">{sublabel}</div>
       </div>
       <div className="scenario-metrics">
-        <MetricRow label="OEE" value={`${(r.oee * 100).toFixed(1)}%`} />
-        <MetricRow label="Throughput" value={`${r.throughputPerHour}/hr`} />
-        <MetricRow label="Total produced" value={String(r.totalProduced)} />
-        <MetricRow label="Downtime" value={`${r.downtimeMinutes} min`} />
-        <MetricRow label="Critical incidents" value={String(r.criticalIncidents)} />
-        <MetricRow label="Human interventions" value={String(r.humanInterventions)} />
-        <MetricRow label="Peak bottleneck" value={r.peakBottleneck || "—"} />
+        {metrics.map((m) => (
+          <MetricRow key={m.key} label={m.label} value={m.fmt(r)} />
+        ))}
+        {r.peakBottleneck && <MetricRow label="Peak bottleneck" value={r.peakBottleneck} />}
       </div>
     </div>
   );

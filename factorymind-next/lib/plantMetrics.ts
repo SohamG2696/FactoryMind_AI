@@ -20,7 +20,8 @@ export interface PlantSummary {
 }
 
 export function summarizePlant(state: SimState, ml: MlPredictionMap): PlantSummary {
-  const cells = state.machines;
+  // The standby lathe only counts while it is running rerouted work.
+  const cells = state.machines.filter((m) => !m.standby || m.statusText !== "Standby");
   const productionCells = cells.filter((m) => m.kind !== "warehouse");
   const preds = productionCells.map((m) => ml[m.code]).filter(Boolean);
 

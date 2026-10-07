@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import AdminSystemPanel from "@/components/ai/AdminSystemPanel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faGear,
@@ -193,7 +194,8 @@ export default function SettingsPage() {
           </div>
         ))}
       </section>
+
+      <AdminSystemPanel />
     </div>
   );
 }
-

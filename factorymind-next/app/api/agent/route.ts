@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
       reports: supOut.reports,
       actions: executedActions,
       ml,
+      recovery: supOut.recovery,
     });
   } catch (err: any) {
     console.error("[/api/agent] error:", err);
@@ -116,6 +117,9 @@ async function executeAction(
       requiredCertifications: action.args.requiredCertifications || [],
       agentName: action.agentName,
       agentReasoning: action.args.agentReasoning,
+      diagnosis: action.args.diagnosis,
+      evidence: action.args.evidence,
+      recommendedPlan: action.args.plan,
       mlPrediction: action.args.mlPrediction,
       autonomyLevel: action.autonomyLevel,
       expectedImpact: action.args.expectedImpact,

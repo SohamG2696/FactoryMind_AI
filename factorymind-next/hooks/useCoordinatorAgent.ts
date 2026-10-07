@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SimState } from "./useFactorySim";
 import type { MlPredictionMap } from "@/lib/agents/types";
+import type { RecoveryPlan } from "@/lib/agents/recovery";
 
 export interface AgentAction {
   tool: string;
@@ -27,6 +28,7 @@ export interface AgentDecision {
   reports: AgentSubReport[];
   actions: AgentAction[];
   ml: MlPredictionMap;
+  recovery?: RecoveryPlan | null;
 }
 
 interface UseCoordinatorAgentOpts {
@@ -66,6 +68,7 @@ export function useCoordinatorAgent(
           id: m.id, code: m.code, label: m.label, status: m.status,
           health: m.health, temperature: m.temperature, vibration: m.vibration,
           toolWear: m.toolWear, queue: m.queue, utilization: m.utilization, rpm: m.rpm,
+          capacity: m.capacity, standby: m.standby, isolated: m.isolated,
         })),
         agvs: s.agvs.map((a) => ({
           id: a.id, code: a.code, status: a.status, from: a.fromStation, to: a.toStation,
@@ -77,6 +80,14 @@ export function useCoordinatorAgent(
         oee: s.oee,
         currentPartId: s.currentPart.id,
         activeMissionMachineCodes: s.activeWorkers.map((w) => w.targetMachineCode),
+        throughputPerHour: s.throughputPerHour,
+        reroute: s.reroute
+          ? {
+              from: s.machines.find((m) => m.id === s.reroute!.fromId)?.code ?? "",
+              to: s.machines.find((m) => m.id === s.reroute!.toId)?.code ?? "",
+            }
+          : null,
+        throttled: s.throttled,
       };
 
       const res = await fetch("/api/agent", {
@@ -96,6 +107,7 @@ export function useCoordinatorAgent(
         reports: json.reports || [],
         actions: json.actions || [],
         ml: json.ml || {},
+        recovery: json.recovery ?? null,
       };
 
       // Apply mutating actions locally

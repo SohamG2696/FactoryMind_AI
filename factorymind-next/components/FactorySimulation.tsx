@@ -7,6 +7,8 @@ import FactoryFloorSVG, { FloorLayer } from "@/components/FactoryFloorSVG";
 import ProductionFlowStrip from "@/components/ProductionFlowStrip";
 import AIControlCenter from "@/components/AIControlCenter";
 import LayerToggle from "@/components/LayerToggle";
+import FailureSimulator from "@/components/ai/FailureSimulator";
+import InterventionCenter from "@/components/ai/InterventionCenter";
 import { MachineSVG } from "@/components/MachineSVGs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -178,7 +180,7 @@ function InspectorModal({
   );
 }
 
-function ChartCard({ label, val, data, color }: { label: string; val: string; data: number[]; color: string }) {
+export function ChartCard({ label, val, data, color }: { label: string; val: string; data: number[]; color: string }) {
   return (
     <div className="sim-chart-card">
       <div className="sim-chart-header">
@@ -253,7 +255,7 @@ export default function FactorySimulation() {
             </button>
           ) : (
             <button className="sim-btn play-state" onClick={play}>
-              <FontAwesomeIcon icon={faPlay} /> Play
+              <FontAwesomeIcon icon={faPlay} /> {state.tick === 0 ? "Start simulation" : "Play"}
             </button>
           )}
           {[1, 2, 5].map((s) => (
@@ -282,6 +284,12 @@ export default function FactorySimulation() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Hackathon flow: inject a failure, then watch the AI loop handle it */}
+      <div className="ai-sim-layout">
+        <FailureSimulator />
+        <InterventionCenter />
       </div>
 
       {/* KPI strip — only cards backed by live sim state. WIP + bottleneck
@@ -317,7 +325,7 @@ export default function FactorySimulation() {
         <MiniKpiCard
           icon={faHeartPulse}
           label="AVG HEALTH"
-          value={`${(state.machines.reduce((s, m) => s + m.health, 0) / state.machines.length).toFixed(0)}%`}
+          value={`${(state.machines.filter((m) => !m.standby).reduce((s, m) => s + m.health, 0) / state.machines.filter((m) => !m.standby).length).toFixed(0)}%`}
           chart={<MiniLine data={state.kpiHistory.health} color="var(--success)" />}
         />
       </div>
@@ -347,6 +355,7 @@ export default function FactorySimulation() {
               agvs={state.agvs}
               currentPart={state.currentPart}
               activeWorkers={state.activeWorkers}
+              reroute={state.reroute}
               aiHighlightedMachines={state.aiHighlightedMachines}
               layer={layer}
               onInspect={setInspectId}

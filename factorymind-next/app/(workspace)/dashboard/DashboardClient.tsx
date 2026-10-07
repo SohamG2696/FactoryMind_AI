@@ -20,6 +20,9 @@ import AlertsSection from "@/components/AlertsSection";
 import UsersPage from "@/components/UsersPage";
 import SettingsPage from "@/components/SettingsPage";
 import MlWorkbench from "@/components/MlWorkbench";
+import InterventionSummary from "@/components/ai/InterventionSummary";
+import InterventionCenter from "@/components/ai/InterventionCenter";
+import DecisionLog from "@/components/ai/DecisionLog";
 
 import { useAuth, ROLE_PERMISSIONS, UserRole } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -125,6 +128,7 @@ function DashboardView({ onNavigate }: { onNavigate: (section: number) => void }
         onOpenAiInsights={() => onNavigate(2)}
       />
       <KpiSection />
+      <InterventionSummary />
       <OverviewSection />
       <AlertsSection />
       <ProductionFlow />
@@ -144,9 +148,11 @@ function DigitalTwinView() {
 function AIAgentView() {
   return (
     <>
+      <InterventionCenter />
       <AiSection />
       <AgentsSection />
       <DecisionSummary />
+      <DecisionLog />
       <ChatSection />
     </>
   );

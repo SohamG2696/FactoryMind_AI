@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MachineState, AGV, CurrentPart, ActiveWorker } from "@/hooks/useFactorySim";
+import { MachineState, AGV, CurrentPart, ActiveWorker, Reroute } from "@/hooks/useFactorySim";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faMinus, faExpand, faCompress } from "@fortawesome/free-solid-svg-icons";
 
@@ -45,6 +45,43 @@ interface Props {
   aiHighlightedMachines?: string[];
   layer?: FloorLayer;
   onInspect: (id: string) => void;
+  /** Operator view: crop the floor around this machine and fade the others. */
+  focusMachineId?: string;
+  /** Active production reroute — draws the alternate flow and AGV path. */
+  reroute?: Reroute | null;
+}
+
+/** Big, unmistakable state overlay: DOWN / STARVED / STANDBY / REROUTED. */
+function StateOverlay({ m, reroutedTo }: { m: MachineState; reroutedTo: boolean }) {
+  const down = m.status === "downtime" || m.isolated;
+  const starved = (m.starvedTicks ?? 0) >= 6;
+  const standbyIdle = m.standby && m.statusText === "Standby";
+  if (!down && !starved && !standbyIdle && !reroutedTo) return null;
+  const label = down
+    ? m.isolated ? "⛔ DOWN · ISOLATED" : m.breakdownTick !== undefined ? "💥 BREAKDOWN" : "🔧 MAINTENANCE"
+    : starved ? "⚠ STARVED · NO PARTS"
+    : reroutedTo ? "🔀 RUNNING REROUTED WORK"
+    : "STANDBY";
+  const color = down ? "#B23A3A" : starved ? "#C87D1F" : reroutedTo ? "#E8590C" : "#6B7280";
+  return (
+    <g pointerEvents="none">
+      {(down || reroutedTo) && (
+        <rect x={m.x - 114} y={m.y - 84} width="228" height="168" rx="8"
+          fill={down ? "rgba(178,58,58,0.16)" : "rgba(232,89,12,0.06)"} stroke={color} strokeWidth="3"
+          strokeDasharray={down ? "0" : "8 5"}>
+          {reroutedTo && <animate attributeName="stroke-dashoffset" values="0;-26" dur="1s" repeatCount="indefinite" />}
+        </rect>
+      )}
+      <g transform={`translate(${m.x}, ${m.y - 6})`}>
+        <rect x="-92" y="-15" width="184" height="30" rx="15" fill={color} opacity="0.95">
+          {(down || starved) && <animate attributeName="opacity" values="0.95;0.6;0.95" dur="1.2s" repeatCount="indefinite" />}
+        </rect>
+        <text x="0" y="5" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="800" fontFamily="monospace" letterSpacing="0.06em">
+          {label}
+        </text>
+      </g>
+    </g>
+  );
 }
 
 /* ────────── individual top-down machine glyphs ────────── */
@@ -492,7 +529,7 @@ function ActiveWorkerGlyph({ w }: { w: ActiveWorker }) {
 
 export default function FactoryFloorSVG({
   machines, agvs, currentPart, activeWorkers = [], aiHighlightedMachines = [],
-  layer = "floor", onInspect,
+  layer = "floor", onInspect, focusMachineId, reroute = null,
 }: Props) {
   const [zoom, setZoom] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
@@ -505,6 +542,7 @@ export default function FactoryFloorSVG({
   const cnc7 = byId.get("cnc7")!;
   const press = byId.get("press")!;
   const conveyor = byId.get("conveyor")!;
+  const standby = byId.get("lathe2");
 
   // Flow arrow endpoints (offset from machine centers to their edges)
   const flowArrows = [
@@ -518,7 +556,15 @@ export default function FactoryFloorSVG({
 
   const totalProduced = machines.reduce((s, m) => s + m.produced, 0);
 
-  const viewBox = `0 0 ${1200 / zoom} ${640 / zoom}`;
+  const focus = focusMachineId ? byId.get(focusMachineId) : undefined;
+  let viewBox = `0 0 ${1200 / zoom} ${640 / zoom}`;
+  if (focus) {
+    // Show the machine plus enough of its neighbours to see material arriving and leaving.
+    const w = 1200 / (2.2 * zoom);
+    const h = 640 / (2.2 * zoom);
+    viewBox = `${focus.x - w / 2} ${focus.y - h / 2} ${w} ${h}`;
+  }
+  const fade = (id: string) => (focus && focus.id !== id ? 0.35 : 1);
 
   return (
     <div style={{ position: "relative", width: "100%" }}>
@@ -549,6 +595,7 @@ export default function FactoryFloorSVG({
           display: "block",
           width: "100%",
           aspectRatio: "1200 / 640",
+          transition: "opacity 0.3s",
           height: fullscreen ? "80vh" : "auto",
         }}
       >
@@ -606,6 +653,13 @@ export default function FactoryFloorSVG({
         {(layer === "floor" || layer === "material") && (
           <g opacity={layer === "material" ? 1 : 0.7}>
             {flowArrows.map((f, i) => {
+              const bypassed = !!reroute && (i === 2 || i === 3);
+              if (bypassed) {
+                return (
+                  <line key={i} x1={f.from.x} y1={f.from.y} x2={f.to.x} y2={f.to.y}
+                    stroke="#9CA3AF" strokeWidth="2" strokeDasharray="4 6" opacity="0.5" />
+                );
+              }
               if (f.curve) {
                 return (
                   <path
@@ -631,11 +685,34 @@ export default function FactoryFloorSVG({
           </g>
         )}
 
+        {/* Rerouted material flow: Robot → CNC-05 standby → Press */}
+        {reroute && standby && (
+          <g>
+            <line x1={robot.x + 110} y1={robot.y} x2={standby.x - 110} y2={standby.y}
+              stroke={ORANGE} strokeWidth="4" strokeDasharray="10 6" markerEnd="url(#mflow-arrow)">
+              <animate attributeName="stroke-dashoffset" values="0;-32" dur="0.8s" repeatCount="indefinite" />
+            </line>
+            <path d={`M ${standby.x} ${standby.y + 80} Q ${standby.x - 60} ${press.y - 120} ${press.x + 110} ${press.y - 30}`}
+              stroke={ORANGE} strokeWidth="4" fill="none" strokeDasharray="10 6" markerEnd="url(#mflow-arrow)">
+              <animate attributeName="stroke-dashoffset" values="0;-32" dur="0.8s" repeatCount="indefinite" />
+            </path>
+            <g transform={`translate(${(robot.x + standby.x) / 2}, ${robot.y - 24})`}>
+              <rect x="-62" y="-11" width="124" height="22" rx="11" fill={ORANGE} />
+              <text x="0" y="4" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="800" fontFamily="monospace">AI REROUTE</text>
+            </g>
+          </g>
+        )}
+
         {/* AGV routes — dim on floor, prominent on agv layer */}
         {(layer === "floor" || layer === "agv") && (
           <g opacity={layer === "agv" ? 1 : 0.45}>
             <line x1={wh.x} y1={wh.y} x2={cnc1.x} y2={cnc1.y} stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
-            <line x1={robot.x} y1={robot.y} x2={cnc7.x} y2={cnc7.y} stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
+            {reroute && standby ? (
+              <polyline points={`${robot.x},${robot.y} ${standby.x},${standby.y} ${press.x},${press.y} ${robot.x},${robot.y}`}
+                fill="none" stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "2.2"} strokeDasharray="6 5" />
+            ) : (
+              <line x1={robot.x} y1={robot.y} x2={cnc7.x} y2={cnc7.y} stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
+            )}
             <line x1={conveyor.x} y1={conveyor.y} x2="1050" y2="480" stroke={AGV_ROUTE} strokeWidth={layer === "agv" ? "3" : "1.8"} strokeDasharray="6 5" />
           </g>
         )}
@@ -644,12 +721,24 @@ export default function FactoryFloorSVG({
         <FinishedGoodsGlyph count={totalProduced} />
 
         {/* Machines */}
-        <WarehouseGlyph m={wh} onClick={() => onInspect(wh.id)} />
-        <CNCGlyph m={cnc1} onClick={() => onInspect(cnc1.id)} variant="mill" />
-        <RobotGlyph m={robot} onClick={() => onInspect(robot.id)} />
-        <CNCGlyph m={cnc7} onClick={() => onInspect(cnc7.id)} variant="lathe" />
-        <PressGlyph m={press} onClick={() => onInspect(press.id)} />
-        <ConveyorGlyph m={conveyor} onClick={() => onInspect(conveyor.id)} />
+        <g opacity={fade(wh.id)}><WarehouseGlyph m={wh} onClick={() => onInspect(wh.id)} /></g>
+        <g opacity={fade(cnc1.id)}><CNCGlyph m={cnc1} onClick={() => onInspect(cnc1.id)} variant="mill" /></g>
+        <g opacity={fade(robot.id)}><RobotGlyph m={robot} onClick={() => onInspect(robot.id)} /></g>
+        <g opacity={fade(cnc7.id)}><CNCGlyph m={cnc7} onClick={() => onInspect(cnc7.id)} variant="lathe" /></g>
+        <g opacity={fade(press.id)}><PressGlyph m={press} onClick={() => onInspect(press.id)} /></g>
+        <g opacity={fade(conveyor.id)}><ConveyorGlyph m={conveyor} onClick={() => onInspect(conveyor.id)} /></g>
+        {standby && (
+          <g opacity={focus ? fade(standby.id) : standby.statusText === "Standby" ? 0.45 : 1}>
+            <CNCGlyph m={standby} onClick={() => onInspect(standby.id)} variant="lathe" />
+          </g>
+        )}
+
+        {/* State overlays: down / starved / standby / rerouted */}
+        {machines.map((m) => (
+          <g key={`ov-${m.id}`} opacity={fade(m.id)}>
+            <StateOverlay m={m} reroutedTo={!!reroute && reroute.toId === m.id} />
+          </g>
+        ))}
 
         {/* Machine status labels (below each glyph) — dimmed on non-floor layers */}
         <g opacity={layer === "floor" || layer === "health" ? 1 : 0.45}>

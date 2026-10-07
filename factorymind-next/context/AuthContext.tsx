@@ -17,6 +17,10 @@ export interface UserAccount {
   machinesManaged?: number;
   fixedClearance?: boolean; // Cannot be deleted or modified (Fixed plant leadership)
   password?: string; // Account security password (Format: Name@123)
+  /** Operators only — the machine cell (e.g. "CELL-04") they are staffed on. */
+  assignedMachine?: string;
+  shift?: "A" | "B" | "C";
+  supervisorId?: string;
 }
 
 export function getExpectedPasswordForName(name: string): string {
@@ -167,6 +171,9 @@ export const INITIAL_USERS: UserAccount[] = [
     status: "Active",
     lastActive: "Just now",
     machinesManaged: 4,
+    assignedMachine: "CELL-01",
+    shift: "A",
+    supervisorId: "usr-super-01",
   },
   {
     id: "usr-op-02",
@@ -180,6 +187,9 @@ export const INITIAL_USERS: UserAccount[] = [
     status: "Active",
     lastActive: "35 min ago",
     machinesManaged: 3,
+    assignedMachine: "CELL-02",
+    shift: "A",
+    supervisorId: "usr-super-03",
   },
 ];
 

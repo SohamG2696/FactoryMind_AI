@@ -7,6 +7,7 @@ import DashboardNav from "@/components/DashboardNav";
 import InboxDrawer from "@/components/InboxDrawer";
 import ChatSection from "@/components/ChatSection";
 import DashboardFooter from "@/components/DashboardFooter";
+import AiAlertCenter from "@/components/ai/AiAlertCenter";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAuth } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -116,7 +117,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ? navItems.find((i) => i.section === activeSection)
     : navItems.find((i) => i.route === pathname);
 
-  const pageTitle = onDashboard ? pageTitles[activeSection] : routeTitles[pathname];
+  const pageTitle = onDashboard
+    ? pageTitles[activeSection]
+    : role === "USER" && pathname === "/simulation"
+    ? `My Workcell — ${user?.assignedMachine ?? "unassigned"}`
+    : routeTitles[pathname];
 
   return (
     <WorkspaceNavContext.Provider value={{ activeSection, goToSection }}>
@@ -167,6 +172,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <DashboardFooter />
         </div>
       </div>
+
+      {/* Live AI alerts + agent responses (admins and supervisors) */}
+      <AiAlertCenter />
 
       {/* Floating AI Assistant FAB & Popup */}
       <div className="assistant-fab-container">

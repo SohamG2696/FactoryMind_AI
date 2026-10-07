@@ -13,6 +13,7 @@ import { materialAgent } from "./material";
 import { workforceAgent, PendingMission } from "./workforce";
 import { safetyAgent } from "./safety";
 import { groqReason, isGroqEnabled } from "../groq";
+import { recoveryAgents, RecoveryPlan, LINE } from "./recovery";
 
 /**
  * Supervisor Agent — orchestrates all specialized agents.
@@ -31,6 +32,8 @@ export interface SupervisorRunOutput {
   actions: AgentAction[];
   executiveSummary: string;
   llmUsed: boolean;
+  /** Factory-level recovery plan (impact analysis + steps), when a cell is failing. */
+  recovery: RecoveryPlan | null;
 }
 
 export async function runSupervisor(
@@ -67,14 +70,34 @@ export async function runSupervisor(
   const wf = workforceAgent(pending, workers);
   reports.push(wf);
 
-  // Flatten all actions
+  // Factory-level recovery: which cells are failing, what that does to the line,
+  // and how to keep producing around them.
+  const failing = new Set<string>(
+    maint.actions.filter((a) => a.tool === "create_mission" || a.tool === "pause_machine").map((a) => String(a.args.machineCode))
+  );
+  for (const m of snap.machines) {
+    if (LINE.includes(m.code) && (m.isolated || (m.status === "downtime" && m.health < 50))) failing.add(m.code);
+  }
+  const rec = recoveryAgents(snap, ml, [...failing]);
+  reports.push(...rec.reports);
+
+  // Flatten all actions; drop duplicate pause requests (Maintenance and Safety
+  // can both ask to stop the same machine in one cycle — keep the first).
+  const seenPause = new Set<string>();
   const allActions: AgentAction[] = [
     ...maint.actions,
     ...prod.actions,
     ...mat.actions,
     ...safe.actions,
     ...wf.actions,
-  ];
+    ...rec.actions,
+  ].filter((a) => {
+    if (a.tool !== "pause_machine") return true;
+    const key = String(a.args.machineCode);
+    if (seenPause.has(key)) return false;
+    seenPause.add(key);
+    return true;
+  });
 
   // Optional: Groq one-line executive summary (does not gate actions)
   let executiveSummary = defaultSummary(reports, allActions);
@@ -97,7 +120,11 @@ export async function runSupervisor(
     }
   }
 
-  return { reports, actions: allActions, executiveSummary, llmUsed };
+  if (rec.plan && !llmUsed) {
+    executiveSummary = `${rec.plan.machineCode} failing — ${rec.plan.impact.summary}`;
+  }
+
+  return { reports, actions: allActions, executiveSummary, llmUsed, recovery: rec.plan };
 }
 
 function defaultSummary(reports: AgentReport[], actions: AgentAction[]): string {
