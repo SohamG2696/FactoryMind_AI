@@ -126,7 +126,7 @@ export default function LandingPage() {
               {/* Stats row */}
               <div className="lp-stats">
                 <div className="lp-stat">
-                  <strong>26</strong>
+                  <strong>6</strong>
                   <span>Active Machines</span>
                 </div>
                 <div className="lp-divider" />
