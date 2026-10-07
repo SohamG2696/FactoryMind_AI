@@ -1,3 +1,17 @@
 # Local tooling and generated documents (kept out of the repo)
 .claude/
 docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Environment variables
+.env
+.env*.local
+

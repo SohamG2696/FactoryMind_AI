@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FactoryMind AI — Web Application (`factorymind-next`)
 
-## Getting Started
+> Next.js 16 frontend and full-stack API server for FactoryMind AI.
 
-First, run the development server:
+For full architectural documentation, system diagrams, and ML service details, see the main [README.md](../README.md) and [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+---
+
+## ⚡ Quick Start
+
+### 1. Install Dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure Environment Variables
+Create `.env.local` in this directory:
+```bash
+MONGODB_URI="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority"
+MONGODB_DB="factorymind"
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Optional: Groq API Key for LLM assistant
+GROQ_API_KEY="gsk_..."
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+### 4. Seed MongoDB Database
+Initialize default users, machine assignments, and indexes:
+```bash
+curl -X POST http://localhost:3000/api/seed
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧭 Application Routes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `/` — Landing Page & Platform Feature Overview
+- `/dashboard` — 11-Section Unified Operations Hub (Role-Gated SPA)
+- `/simulation` — Live 2D Factory SCADA Simulation with Kinematic AGVs & Coordinator Agent Console
+- `/manpower` — Real-Time Workforce, Shift Allocation (A/B/C), and AI Span-of-Control Advisor
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📡 API Endpoints
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All API handlers are defined under `app/api/`:
+- `GET /api/health` — Health check
+- `GET/POST /api/seed` — Seed status check & database re-seeding
+- `GET/POST/PUT/DELETE /api/users` — Role-based user administration
+- `GET/PUT /api/manpower` — Operator/supervisor allocations
+- `GET/POST/PATCH/DELETE /api/inbox` — Supervisor incident inbox
+- `POST /api/agent` — Coordinator Agent watchdog tick
+- `POST /api/predict` — 3-tier predictive maintenance ML inference
+- `POST /api/chat` — AI Maintenance Copilot
+
+---
+
+## 🧪 Available Scripts
+
+- `npm run dev` — Starts Next.js dev server on port 3000
+- `npm run build` — Creates production build
+- `npm run start` — Runs production server
+- `npm run lint` — Runs ESLint checks

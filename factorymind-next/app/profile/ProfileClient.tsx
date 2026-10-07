@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useMissions } from "@/hooks/useMissions";
@@ -116,6 +117,13 @@ export default function ProfileClient() {
   // Compute "recent activity" section grouping — supervisors see inbox, admins see decisions
   const showInbox = role === "SUPERVISOR" && supervisorId;
 
+  const router = useRouter();
+
+  const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    router.push(path);
+  };
+
   return (
     <div className="sim-page-wrapper">
       <div className="background-grid" />
@@ -133,9 +141,9 @@ export default function ProfileClient() {
           <span>LIVE FROM MONGODB · AGENT_DECISIONS · MISSIONS</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link href="/dashboard" className="sim-nav-btn primary"><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
-          <Link href="/simulation" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
-          <Link href="/" className="sim-nav-btn secondary"><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
+          <Link href="/dashboard" className="sim-nav-btn primary" onClick={(e) => handleNav(e, "/dashboard")}><FontAwesomeIcon icon={faArrowLeft} /><span>Dashboard</span></Link>
+          <Link href="/simulation" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/simulation")}><FontAwesomeIcon icon={faIndustry} /><span>Simulation</span></Link>
+          <Link href="/" className="sim-nav-btn secondary" onClick={(e) => handleNav(e, "/")}><FontAwesomeIcon icon={faHouse} /><span>Home</span></Link>
         </div>
       </header>
 

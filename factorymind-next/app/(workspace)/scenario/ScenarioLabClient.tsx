@@ -93,7 +93,6 @@ export default function ScenarioLabClient() {
 
   return (
     <div className="sim-page-wrapper sim-embedded">
-
       <main className="sim-main-container">
         <div className="sim-hub-banner">
           <div style={{ flex: 1 }}>

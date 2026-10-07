@@ -118,7 +118,6 @@ export default function ManpowerClient() {
 
   return (
     <div className="sim-page-wrapper sim-embedded">
-
       <main className="sim-main-container">
         {/* Hero */}
         <div className="sim-hub-banner">
