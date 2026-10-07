@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MachineState, AGV, CurrentPart, ActiveWorker, Reroute } from "@/hooks/useFactorySim";
+import { useOperatorTasks } from "@/context/OperatorTaskContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faMinus, faExpand, faCompress } from "@fortawesome/free-solid-svg-icons";
 
