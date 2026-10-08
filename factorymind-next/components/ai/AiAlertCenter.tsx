@@ -54,10 +54,19 @@ export default function AiAlertCenter() {
         {toasts.map((t) => (
           <div key={t.id} className={`ai-toast kind-${t.kind}`}>
             <span className="ai-toast-icon">{t.icon}</span>
-            <div>
+            <div className="ai-toast-body">
               <strong>{iv?.machineCode ?? "AI"} · {t.clock}</strong>
               <span>{t.msg}</span>
             </div>
+            <button
+              type="button"
+              className="ai-toast-close"
+              onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+              aria-label="Dismiss alert"
+              title="Dismiss alert"
+            >
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
           </div>
         ))}
       </div>

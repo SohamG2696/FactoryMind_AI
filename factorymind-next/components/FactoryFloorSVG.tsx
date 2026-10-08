@@ -30,6 +30,14 @@ const ORANGE_DARK = "#E64A0F";
 const AGV_ROUTE = "#4A9FE7";
 const WOOD = "#B08A5C";
 const STEEL = "#C6BEB0";
+const STEEL_LIGHT = "#E4DDCE";
+
+const STATUS_STROKE: Record<string, string> = {
+  healthy: "#3F7A5F",
+  warning: "#C87D1F",
+  critical: "#B23A3A",
+  downtime: "#7A7770",
+};
 
 const STATUS_DOT: Record<string, string> = {
   healthy: "#3F7A5F",
@@ -87,11 +95,15 @@ function StateOverlay({ m, reroutedTo }: { m: MachineState; reroutedTo: boolean 
 
 /* ────────── individual top-down machine glyphs ────────── */
 
+/* ────────── individual top-down machine glyphs with live animated mechanics ────────── */
+
 function WarehouseGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
-  // Rack building with grid of filled pallet bins
-  const fill = Math.min(1, m.queue / 60);
+  const isDown = m.status === "downtime" || m.isolated;
+  const active = !isDown;
+  const fill = Math.min(1, Math.max(0.1, m.queue / Math.max(1, m.capacity)));
   const bins = 12;
-  const filled = Math.floor(fill * bins);
+  const filled = Math.round(fill * bins);
+
   return (
     <g transform={`translate(${m.x - 110}, ${m.y - 90})`} style={{ cursor: "pointer" }} onClick={onClick}>
       {/* Building outer wall */}
@@ -99,7 +111,7 @@ function WarehouseGlyph({ m, onClick }: { m: MachineState; onClick: () => void }
       {/* Roof striping band */}
       <rect x="0" y="0" width="220" height="16" rx="6" fill={INK} />
       <text x="110" y="12" textAnchor="middle" fill={CANVAS} fontSize="9" fontFamily="monospace" letterSpacing="0.14em" fontWeight="700">
-        AS/RS WAREHOUSE
+        {m.code} · AS/RS WAREHOUSE
       </text>
 
       {/* Rack grid — 3 rows × 4 cols of bin cells */}
@@ -107,11 +119,13 @@ function WarehouseGlyph({ m, onClick }: { m: MachineState; onClick: () => void }
         [0, 1, 2, 3].map((col) => {
           const idx = row * 4 + col;
           const isFilled = idx < filled;
+          const x = 14 + col * 48;
+          const y = 30 + row * 46;
           return (
             <g key={idx}>
               <rect
-                x={14 + col * 48}
-                y={30 + row * 46}
+                x={x}
+                y={y}
                 width={44}
                 height={40}
                 fill={CREAM}
@@ -120,25 +134,48 @@ function WarehouseGlyph({ m, onClick }: { m: MachineState; onClick: () => void }
               />
               {isFilled && (
                 <>
-                  <rect x={17 + col * 48} y={33 + row * 46} width={38} height={16} fill={ORANGE} opacity="0.9" stroke={INK} strokeWidth="0.6" />
-                  <rect x={17 + col * 48} y={51 + row * 46} width={38} height={16} fill={ORANGE} opacity="0.9" stroke={INK} strokeWidth="0.6" />
+                  <rect x={x + 3} y={y + 3} width={38} height={16} fill={ORANGE} opacity="0.9" stroke={INK} strokeWidth="0.6" rx="1" />
+                  <rect x={x + 3} y={y + 21} width={38} height={16} fill={ORANGE} opacity="0.9" stroke={INK} strokeWidth="0.6" rx="1" />
                 </>
               )}
               {/* Bin divider */}
-              <line x1={14 + col * 48} y1={50 + row * 46} x2={58 + col * 48} y2={50 + row * 46} stroke={INK_SOFT} strokeWidth="0.5" />
+              <line x1={x} y1={y + 20} x2={x + 44} y2={y + 20} stroke={INK_SOFT} strokeWidth="0.5" />
             </g>
           );
         })
       )}
 
-      {/* Loading dock arrow */}
+      {/* Active Stacker Crane (SRM) Mast traversing horizontally */}
+      {active && (
+        <g>
+          <line y1="28" y2="168" stroke={INK} strokeWidth="3" opacity="0.85">
+            <animate attributeName="x1" values="24;196;70;150;24" dur="5.6s" repeatCount="indefinite" />
+            <animate attributeName="x2" values="24;196;70;150;24" dur="5.6s" repeatCount="indefinite" />
+          </line>
+          {/* Elevator Fork */}
+          <rect y="70" width="12" height="10" rx="1" fill={ORANGE_DARK} stroke={INK} strokeWidth="0.8">
+            <animate attributeName="x" values="18;190;64;144;18" dur="5.6s" repeatCount="indefinite" />
+            <animate attributeName="y" values="40;130;60;100;40" dur="2.8s" repeatCount="indefinite" />
+          </rect>
+        </g>
+      )}
+
+      {/* Loading dock arrow & AGV shuttle */}
       <path d="M 220 90 L 236 90 L 232 84 M 236 90 L 232 96" stroke={ORANGE} strokeWidth="1.6" fill="none" />
+      {active && (
+        <rect y="164" width="18" height="10" rx="2" fill={ORANGE} stroke={INK} strokeWidth="0.8">
+          <animate attributeName="x" values="20;180;20" dur="4.2s" repeatCount="indefinite" />
+        </rect>
+      )}
     </g>
   );
 }
 
 function CNCGlyph({ m, onClick, variant = "mill" }: { m: MachineState; onClick: () => void; variant?: "mill" | "lathe" }) {
+  const isDown = m.status === "downtime" || m.isolated;
+  const active = !isDown && m.rpm > 100;
   const label = variant === "mill" ? "CNC MILLING" : "CNC LATHE";
+
   return (
     <g transform={`translate(${m.x - 110}, ${m.y - 80})`} style={{ cursor: "pointer" }} onClick={onClick}>
       {/* Machine base */}
@@ -159,29 +196,114 @@ function CNCGlyph({ m, onClick, variant = "mill" }: { m: MachineState; onClick: 
       <line x1="40" y1="56" x2="150" y2="56" stroke={INK_SOFT} strokeDasharray="2 3" opacity="0.6" />
       <line x1="40" y1="118" x2="150" y2="118" stroke={INK_SOFT} strokeDasharray="2 3" opacity="0.6" />
 
-      {/* Tool head (varies by variant) */}
+      {/* Tool head & live machining motion */}
       {variant === "mill" ? (
         <g>
-          <rect x="88" y="62" width="14" height="24" fill={STEEL} stroke={INK} strokeWidth="0.8" />
-          <circle cx="95" cy="94" r="7" fill={INK_MID} stroke={INK} strokeWidth="0.8" />
-          <circle cx="95" cy="94" r="3" fill={ORANGE} />
+          {/* X/Y-Traversing Spindle Assembly */}
+          <g>
+            {active && (
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0,0; 28,0; -24,0; 12,0; 0,0"
+                dur="3.2s"
+                repeatCount="indefinite"
+              />
+            )}
+            <rect x="88" y="54" width="14" height="28" rx="2" fill={STEEL} stroke={INK} strokeWidth="0.8" />
+            <circle cx="95" cy="86" r="6" fill={INK_MID} stroke={INK} strokeWidth="0.8" />
+
+            {/* Spinning Milling Bit */}
+            <circle cx="95" cy="94" r="3" fill={ORANGE}>
+              {active && (
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0 95 94"
+                  to="360 95 94"
+                  dur="0.15s"
+                  repeatCount="indefinite"
+                />
+              )}
+            </circle>
+
+            {/* Golden Cutting Sparks & Coolant Mist */}
+            {active && (
+              <g transform="translate(95, 102)">
+                <circle cx="-3" cy="-1" r="1.2" fill="#FBBF24">
+                  <animate attributeName="opacity" values="1;0;1" dur="0.2s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="-1;-6;-1" dur="0.2s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="0;-4;0" dur="0.2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="3" cy="-1" r="1.2" fill="#FBBF24">
+                  <animate attributeName="opacity" values="0;1;0" dur="0.22s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="1;6;1" dur="0.22s" repeatCount="indefinite" />
+                  <animate attributeName="cy" values="0;-5;0" dur="0.22s" repeatCount="indefinite" />
+                </circle>
+                {/* Coolant Mist stream */}
+                <line x1="-4" y1="-8" x2="0" y2="0" stroke="#38BDF8" strokeWidth="1.2" opacity="0.8">
+                  <animate attributeName="opacity" values="0.3;0.9;0.3" dur="0.3s" repeatCount="indefinite" />
+                </line>
+              </g>
+            )}
+          </g>
+          {/* Workpiece under tool with pocket cut */}
+          <rect x="76" y="104" width="38" height="10" rx="1" fill={WOOD} stroke={INK} strokeWidth="0.6" />
         </g>
       ) : (
         <g>
-          {/* Lathe chuck */}
-          <circle cx="60" cy="87" r="12" fill={STEEL} stroke={INK} strokeWidth="1" />
-          <circle cx="60" cy="87" r="4" fill={INK} />
-          <rect x="72" y="83" width="60" height="8" fill={WOOD} stroke={INK} strokeWidth="0.6" />
-          <rect x="132" y="80" width="10" height="14" fill={STEEL} stroke={INK} strokeWidth="0.8" />
+          {/* Lathe chuck with continuous rotation */}
+          <g transform="translate(56, 87)">
+            <circle cx="0" cy="0" r="14" fill={STEEL} stroke={INK} strokeWidth="1.2" />
+            <circle cx="0" cy="0" r="5" fill={INK} />
+            {active && (
+              <line x1="-12" y1="0" x2="12" y2="0" stroke={INK_MID} strokeWidth="2">
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0"
+                  to="360"
+                  dur="0.2s"
+                  repeatCount="indefinite"
+                />
+              </line>
+            )}
+          </g>
+
+          {/* Cylindrical Billet Workpiece */}
+          <rect x="70" y="81" width="62" height="12" rx="1" fill={WOOD} stroke={INK} strokeWidth="0.8" />
+          {/* Tailstock */}
+          <rect x="132" y="78" width="12" height="18" fill={STEEL} stroke={INK} strokeWidth="0.8" />
+
+          {/* Traversing Tool Carriage */}
+          <g>
+            {active && (
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                values="0,0; 32,0; 10,0; 0,0"
+                dur="3.2s"
+                repeatCount="indefinite"
+              />
+            )}
+            <rect x="88" y="93" width="18" height="14" rx="1" fill={STEEL_LIGHT} stroke={INK} strokeWidth="0.8" />
+            <polygon points="97,89 93,95 101,95" fill={ORANGE} stroke={INK} strokeWidth="0.5" />
+
+            {/* Lathe metal cutting sparks */}
+            {active && (
+              <circle cx="97" cy="88" r="1.5" fill="#FBBF24">
+                <animate attributeName="opacity" values="1;0;1" dur="0.18s" repeatCount="indefinite" />
+                <animate attributeName="cy" values="88;82;88" dur="0.18s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="97;92;97" dur="0.18s" repeatCount="indefinite" />
+              </circle>
+            )}
+          </g>
         </g>
       )}
 
-      {/* Workpiece under tool */}
-      <rect x="82" y="106" width="26" height="8" fill={WOOD} stroke={INK} strokeWidth="0.6" />
-
-      {/* Control panel */}
+      {/* Control panel on right */}
       <rect x="170" y="46" width="30" height="82" rx="2" fill={INK} />
-      <circle cx="185" cy="56" r="2" fill={STATUS_DOT[m.status]}>
+      <circle cx="185" cy="56" r="2.5" fill={STATUS_DOT[m.status]}>
         <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite" />
       </circle>
       <rect x="176" y="64" width="18" height="2" fill={CANVAS} opacity="0.6" />
@@ -203,7 +325,9 @@ function CNCGlyph({ m, onClick, variant = "mill" }: { m: MachineState; onClick: 
 }
 
 function RobotGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
-  const swing = m.status === "downtime" ? 0 : Math.sin(m.history.length * 0.25) * 40;
+  const isDown = m.status === "downtime" || m.isolated;
+  const active = !isDown;
+
   return (
     <g transform={`translate(${m.x - 110}, ${m.y - 80})`} style={{ cursor: "pointer" }} onClick={onClick}>
       <rect x="0" y="0" width="220" height="160" rx="6" fill={CANVAS} stroke={INK} strokeWidth="1.6" />
@@ -217,29 +341,102 @@ function RobotGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
       {/* Safety zone circle */}
       <circle cx="110" cy="90" r="50" fill="none" stroke={ORANGE} strokeWidth="0.8" strokeDasharray="3 3" opacity="0.6" />
 
-      {/* Pedestal */}
-      <circle cx="110" cy="90" r="14" fill={INK} />
-      <circle cx="110" cy="90" r="8" fill={STEEL} />
+      {/* Infeed Conveyor Stub on Left (x: 20, y: 84) */}
+      <rect x="20" y="84" width="36" height="12" rx="1" fill={INK_MID} stroke={INK} strokeWidth="0.8" />
+      {/* Workpiece on infeed (fades as picked) */}
+      <rect x="30" y="86" width="12" height="8" rx="1" fill={WOOD} stroke={INK} strokeWidth="0.5">
+        {active && (
+          <animate
+            attributeName="opacity"
+            values="1;1;0;0;1;1"
+            keyTimes="0; 0.15; 0.22; 0.88; 0.95; 1"
+            dur="4.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </rect>
 
-      {/* Arm segment 1 (top-down view) */}
-      <g transform={`rotate(${swing} 110 90)`}>
-        <rect x="105" y="40" width="10" height="52" rx="3" fill={ORANGE} stroke={INK} strokeWidth="1" />
-        <circle cx="110" cy="42" r="6" fill={STEEL} stroke={INK} strokeWidth="0.8" />
-        {/* Wrist + gripper */}
-        <g transform={`rotate(${-swing * 0.7} 110 42)`}>
-          <rect x="107" y="26" width="6" height="18" fill={ORANGE_DARK} stroke={INK} strokeWidth="0.6" />
-          <rect x="103" y="20" width="4" height="8" fill={INK_MID} />
-          <rect x="113" y="20" width="4" height="8" fill={INK_MID} />
-          {m.load > 0.4 && <rect x="105" y="22" width="10" height="6" fill={WOOD} stroke={INK} strokeWidth="0.5" />}
+      {/* Outfeed Conveyor Stub on Right (x: 164, y: 84) */}
+      <rect x="164" y="84" width="36" height="12" rx="1" fill={INK_MID} stroke={INK} strokeWidth="0.8" />
+      {/* Workpiece on outfeed (appears when placed) */}
+      <rect x="174" y="86" width="12" height="8" rx="1" fill={ORANGE_DARK} stroke={INK} strokeWidth="0.5">
+        {active && (
+          <animate
+            attributeName="opacity"
+            values="0;0;1;1;0;0"
+            keyTimes="0; 0.58; 0.65; 0.88; 0.95; 1"
+            dur="4.4s"
+            repeatCount="indefinite"
+          />
+        )}
+      </rect>
+
+      {/* Base Pedestal at (110, 90) */}
+      <circle cx="110" cy="90" r="15" fill={INK} stroke={STATUS_STROKE[m.status]} strokeWidth="1.2" />
+      <circle cx="110" cy="90" r="9" fill={STEEL} />
+      <circle cx="110" cy="90" r="4" fill={INK_MID} />
+
+      {/* Dynamic 6-Axis Robotic Arm Sweeping from Left (-84°) to Right (+84°) */}
+      <g transform="translate(110, 90)">
+        <g>
+          {active && (
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="-84; -84; -65; 0; 65; 84; 84; 65; -65; -84"
+              keyTimes="0; 0.15; 0.25; 0.45; 0.55; 0.65; 0.75; 0.85; 0.95; 1"
+              dur="4.4s"
+              repeatCount="indefinite"
+            />
+          )}
+
+          {/* Primary Arm Link */}
+          <rect x="-6" y="-36" width="12" height="40" rx="3" fill={ORANGE} stroke={INK} strokeWidth="1" />
+          <line x1="0" y1="-32" x2="0" y2="-4" stroke={ORANGE_DARK} strokeWidth="1.5" />
+          <circle cx="0" cy="0" r="4" fill={STEEL_LIGHT} stroke={INK} strokeWidth="0.6" />
+
+          {/* Elbow Joint at y = -36 */}
+          <g transform="translate(0, -36)">
+            <circle cx="0" cy="0" r="6" fill={STEEL} stroke={INK} strokeWidth="0.8" />
+
+            {/* Forearm Link */}
+            <g>
+              {active && (
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  values="10; 10; 25; 15; 25; 10; 10; 20; 20; 10"
+                  keyTimes="0; 0.15; 0.25; 0.45; 0.55; 0.65; 0.75; 0.85; 0.95; 1"
+                  dur="4.4s"
+                  repeatCount="indefinite"
+                />
+              )}
+              <rect x="-5" y="-30" width="10" height="34" rx="2.5" fill={STEEL_LIGHT} stroke={INK} strokeWidth="0.8" />
+
+              {/* Wrist & Gripper Head at y = -30 */}
+              <g transform="translate(0, -30)">
+                <circle cx="0" cy="0" r="4" fill={ORANGE_DARK} stroke={INK} strokeWidth="0.6" />
+                <rect x="-6" y="-8" width="12" height="6" fill={INK} />
+                <rect x="-5" y="-14" width="3" height="8" fill={STEEL} />
+                <rect x="2" y="-14" width="3" height="8" fill={STEEL} />
+
+                {/* Carried Workpiece in Gripper */}
+                {active && (
+                  <rect x="-4" y="-13" width="8" height="6" rx="0.5" fill={WOOD} stroke={INK} strokeWidth="0.5">
+                    <animate
+                      attributeName="opacity"
+                      values="0;0;1;1;1;0;0;0;0;0"
+                      keyTimes="0; 0.18; 0.22; 0.45; 0.60; 0.66; 0.78; 0.85; 0.95; 1"
+                      dur="4.4s"
+                      repeatCount="indefinite"
+                    />
+                  </rect>
+                )}
+              </g>
+            </g>
+          </g>
         </g>
       </g>
-
-      {/* Input/output conveyor stubs */}
-      <rect x="20" y="86" width="36" height="8" fill={INK_MID} stroke={INK} strokeWidth="0.6" />
-      <rect x="164" y="86" width="36" height="8" fill={INK_MID} stroke={INK} strokeWidth="0.6" />
-
-      {/* Small workpiece on input */}
-      <rect x="30" y="88" width="10" height="4" fill={WOOD} />
 
       {m.status !== "healthy" && (
         <circle cx="200" cy="38" r="4" fill={STATUS_DOT[m.status]}>
@@ -251,7 +448,9 @@ function RobotGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
 }
 
 function PressGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
-  const active = m.status !== "downtime";
+  const isDown = m.status === "downtime" || m.isolated;
+  const active = !isDown;
+
   return (
     <g transform={`translate(${m.x - 110}, ${m.y - 80})`} style={{ cursor: "pointer" }} onClick={onClick}>
       <rect x="0" y="0" width="220" height="160" rx="6" fill={CANVAS} stroke={INK} strokeWidth="1.6" />
@@ -262,24 +461,56 @@ function PressGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
 
       <rect x="14" y="28" width="192" height="118" rx="4" fill={BEIGE} stroke={INK_MID} strokeWidth="1" />
 
-      {/* Frame with 4 corner pillars (top-down) */}
+      {/* Frame with 4 corner pillars */}
       <rect x="50" y="46" width="120" height="82" fill={STEEL} stroke={INK} strokeWidth="1.2" />
       <circle cx="60" cy="56" r="6" fill={INK} />
       <circle cx="160" cy="56" r="6" fill={INK} />
       <circle cx="60" cy="118" r="6" fill={INK} />
       <circle cx="160" cy="118" r="6" fill={INK} />
 
-      {/* Central platen with workpiece */}
-      <rect x="82" y="70" width="56" height="34" fill={INK_MID} stroke={INK} strokeWidth="1" />
-      <rect x="92" y="78" width="36" height="18" fill={ORANGE} opacity="0.85" stroke={INK} strokeWidth="0.6">
-        {active && <animate attributeName="height" values="18;12;18" dur="1.4s" repeatCount="indefinite" />}
-        {active && <animate attributeName="y" values="78;84;78" dur="1.4s" repeatCount="indefinite" />}
+      {/* Hydraulic Reciprocating Ram Platen */}
+      <g>
+        {active && (
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0,0; 0,14; 0,14; 0,0; 0,0"
+            keyTimes="0; 0.35; 0.45; 0.85; 1"
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        )}
+        <rect x="76" y="52" width="68" height="18" rx="2" fill={INK} stroke={ORANGE} strokeWidth="1" />
+        <rect x="94" y="70" width="32" height="12" fill={STEEL_LIGHT} stroke={INK} strokeWidth="0.8" />
+      </g>
+
+      {/* Central platen with sheet metal workpiece */}
+      <rect x="82" y="92" width="56" height="24" fill={INK_MID} stroke={INK} strokeWidth="1" />
+      <rect x="92" y="90" width="36" height="8" rx="1" fill={ORANGE} opacity="0.9" stroke={INK} strokeWidth="0.6">
+        {active && (
+          <animate
+            attributeName="height"
+            values="8;3;3;8;8"
+            keyTimes="0; 0.35; 0.45; 0.85; 1"
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        )}
       </rect>
 
-      {/* Ram indicator */}
-      <circle cx="110" cy="87" r="6" fill={ORANGE_DARK}>
-        {active && <animate attributeName="opacity" values="0.4;1;0.4" dur="1.4s" repeatCount="indefinite" />}
-      </circle>
+      {/* Ram indicator & oscillating pressure needle */}
+      <circle cx="110" cy="62" r="5" fill={ORANGE_DARK} />
+      {active && (
+        <line x1="110" y1="62" x2="114" y2="58" stroke="#B23A3A" strokeWidth="1.2">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0 110 62; 75 110 62; 0 110 62"
+            dur="2.4s"
+            repeatCount="indefinite"
+          />
+        </line>
+      )}
 
       {/* Warning stripes on floor */}
       <g transform="translate(22, 132)">
@@ -301,8 +532,10 @@ function PressGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
 }
 
 function ConveyorGlyph({ m, onClick }: { m: MachineState; onClick: () => void }) {
-  const active = m.status !== "downtime" && m.load > 0.1;
-  const beltDur = active ? 2 : 0;
+  const isDown = m.status === "downtime" || m.isolated;
+  const active = !isDown && m.load > 0.05;
+  const beltDur = active ? 2.4 : 0;
+
   return (
     <g transform={`translate(${m.x - 130}, ${m.y - 60})`} style={{ cursor: "pointer" }} onClick={onClick}>
       <rect x="0" y="0" width="260" height="120" rx="6" fill={CANVAS} stroke={INK} strokeWidth="1.6" />
@@ -313,7 +546,12 @@ function ConveyorGlyph({ m, onClick }: { m: MachineState; onClick: () => void })
 
       {/* Belt frame */}
       <rect x="20" y="42" width="220" height="46" rx="4" fill={BEIGE} stroke={INK_MID} strokeWidth="1" />
-      {/* Rollers along the belt */}
+      
+      {/* End Rollers */}
+      <circle cx="26" cy="65" r="10" fill={STEEL} stroke={INK} strokeWidth="1" />
+      <circle cx="234" cy="65" r="10" fill={STEEL} stroke={INK} strokeWidth="1" />
+
+      {/* Continuous Roller Bearings along the belt */}
       {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
         <line
           key={i}
@@ -325,24 +563,27 @@ function ConveyorGlyph({ m, onClick }: { m: MachineState; onClick: () => void })
           strokeWidth="0.8"
         />
       ))}
-      {/* End rollers */}
-      <circle cx="26" cy="65" r="10" fill={STEEL} stroke={INK} strokeWidth="1" />
-      <circle cx="234" cy="65" r="10" fill={STEEL} stroke={INK} strokeWidth="1" />
+      
       {/* Center guide rail */}
       <line x1="30" y1="65" x2="230" y2="65" stroke={INK_SOFT} strokeDasharray="4 3" opacity="0.6" />
 
-      {/* Parts moving along */}
+      {/* Moving Palletized Parts */}
       {active &&
         [0, 1, 2].map((i) => (
-          <rect key={i} y="58" width="14" height="14" fill={ORANGE} stroke={INK} strokeWidth="0.6" rx="1">
-            <animate attributeName="x" values="30;220" dur={`${beltDur * 3}s`} begin={`${i * beltDur}s`} repeatCount="indefinite" />
-          </rect>
+          <g key={i}>
+            <rect y="57" width="16" height="16" rx="2" fill={ORANGE} stroke={INK} strokeWidth="0.8">
+              <animate attributeName="x" values="24;216" dur={`${beltDur * 2}s`} begin={`${i * beltDur * 0.65}s`} repeatCount="indefinite" />
+            </rect>
+            <rect y="61" width="8" height="8" rx="1" fill={WOOD}>
+              <animate attributeName="x" values="28;220" dur={`${beltDur * 2}s`} begin={`${i * beltDur * 0.65}s`} repeatCount="indefinite" />
+            </rect>
+          </g>
         ))}
 
-      {/* Scanner sensor */}
+      {/* Scanner sensor & Pulsing Red Laser Beam */}
       <rect x="120" y="30" width="14" height="12" fill={INK} rx="1" />
-      <line x1="127" y1="42" x2="127" y2="52" stroke="#B23A3A" strokeWidth="1">
-        {active && <animate attributeName="opacity" values="0.2;1;0.2" dur="0.4s" repeatCount="indefinite" />}
+      <line x1="127" y1="42" x2="127" y2="56" stroke="#EF4444" strokeWidth="1.8">
+        {active && <animate attributeName="opacity" values="0.2;1;0.2" dur="0.35s" repeatCount="indefinite" />}
       </line>
 
       {/* Warning stripes bottom */}
