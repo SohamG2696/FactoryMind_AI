@@ -2,16 +2,18 @@
 
 import { useSim } from "@/context/FactorySimContext";
 import type { MachineState } from "@/hooks/useFactorySim";
+import { limitsFor } from "@/lib/failureModes";
 
 type Priority = "high" | "medium" | "low";
 
-/** Most likely issue for a machine, from its live telemetry (thresholds match the sim's warning levels). */
+/** Most likely issue for a machine, from its live telemetry (the machine's own warning limits). */
 export function issueFor(m: MachineState): string {
   if (m.faultTag && m.status !== "healthy") return m.faultTag.charAt(0) + m.faultTag.slice(1).toLowerCase();
   if (m.status === "downtime") return "Down for maintenance";
-  if (m.toolWear > 70) return `Tool wear ${m.toolWear.toFixed(0)}%`;
-  if (m.temperature > 78) return `Overheating · ${m.temperature.toFixed(0)}°C`;
-  if (m.vibration > 2.2) return `High vibration · ${m.vibration.toFixed(1)} mm/s`;
+  const lim = limitsFor(m.id);
+  if (m.toolWear > lim.toolWear.warn) return `Tool wear ${m.toolWear.toFixed(0)}%`;
+  if (m.temperature > lim.temperature.warn) return `Overheating · ${m.temperature.toFixed(0)}°C`;
+  if (m.vibration > lim.vibration.warn) return `High vibration · ${m.vibration.toFixed(1)} mm/s`;
   if (m.health < 90) return "Gradual degradation";
   return "Routine inspection";
 }

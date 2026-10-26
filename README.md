@@ -46,6 +46,7 @@
 - **Kinematic AGVs:** 3 automated guided vehicles (AGVs) navigating station routes with smooth spline-interpolated motion and live task indicators.
 - **Telemetry & SCADA Log:** Real-time event feed with categorical filtering (Machines, AGVs, Material Flow, Alerts) and instantaneous bottleneck detection.
 - **Fault Injection Suite:** On-demand induction of thermal runaway, tool wear acceleration, and electrical power surges.
+- **Machine-Specific Failure Modes:** Each cell fails on its own parameter, judged against its own limits. CNC-01: cutter wear > 60/85 %. Robot: joint vibration > 1.8/3.5 mm/s. CNC-07: bearing vibration > 2.2/4.5 mm/s. Press: oil temperature > 65/80 °C. Conveyor: belt speed < 80/60 %. The UI names the failing parameter, shows its live value against the limits, and lists the recommended repair actions. See [FAILURE_MODES.md](FAILURE_MODES.md).
 
 ### 2. 🤖 Autonomous Coordinator Agent & Supervisor Inbox
 - **Autonomous Watchdog Loop:** Polls factory snapshots (`/api/agent`) every 6 seconds to evaluate anomaly signatures and enforce proactive interventions.

@@ -8238,6 +8238,26 @@ footer {
   min-width: 0;
 }
 .ai-card-title { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); }
+
+/* failing parameter (machine-specific failure mode) */
+.ai-param { margin-bottom: 12px; }
+.ai-param.level-warn { border-color: rgba(196, 132, 29, 0.55); }
+.ai-param.level-crit { border-color: rgba(178, 58, 58, 0.6); }
+.ai-param-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ai-param-name { font-size: 14px; font-weight: 700; color: var(--text-main); }
+.ai-param-value { font-family: var(--font-mono); font-size: 18px; color: var(--text-main); }
+.ai-param-level { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; background: rgba(47, 122, 85, 0.12); color: #23613F; }
+.ai-param-level.level-warn { background: rgba(196, 132, 29, 0.15); color: #8A5A0E; }
+.ai-param-level.level-crit { background: rgba(178, 58, 58, 0.14); color: #9B2C2C; }
+.ai-param-gauge { position: relative; height: 8px; border-radius: 999px; background: var(--border-subtle); }
+.ai-param-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: #2F7A55; transition: width 0.4s ease; }
+.ai-param.level-warn .ai-param-fill { background: #C4841D; }
+.ai-param.level-crit .ai-param-fill { background: #B23A3A; }
+.ai-param-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; }
+.ai-param-mark.warn { background: #C4841D; }
+.ai-param-mark.crit { background: #B23A3A; }
+.ai-param-cause { font-size: 12px; color: var(--text-secondary); }
+.ai-param-actions { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-main); }
 .ai-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ai-metrics div, .ai-impact-grid div, .ai-summary-stats div, .op-ai-metrics div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .ai-metrics span, .ai-impact-grid span, .ai-summary-stats span, .op-ai-metrics span { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }

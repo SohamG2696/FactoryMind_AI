@@ -1,10 +1,12 @@
 import type { MachineState } from "@/hooks/useFactorySim";
+import { limitsFor, speedPct } from "@/lib/failureModes";
 
 /**
  * What each production cell is and what its operator checks. Telemetry is the
  * same simulated signals for every machine (speed, temperature, vibration,
  * wear, queue); the profile names them in the cell's own terms and defines the
- * cell-specific checks the operator works through.
+ * cell-specific checks the operator works through, against the machine's own
+ * warning limits (lib/failureModes.ts).
  */
 
 export interface CellCheck {
@@ -26,17 +28,18 @@ export interface CellProfile {
   checks: CellCheck[];
 }
 
-const tempCheck = (part: string, limit = 78): CellCheck => ({
+const lim = limitsFor;
+const tempCheck = (part: string, limit: number): CellCheck => ({
   label: `${part} temperature below ${limit} °C`,
   ok: (m) => m.temperature < limit,
   detail: (m) => `${m.temperature.toFixed(1)} °C`,
 });
-const vibCheck = (part: string, limit = 2.2): CellCheck => ({
+const vibCheck = (part: string, limit: number): CellCheck => ({
   label: `${part} vibration below ${limit} mm/s`,
   ok: (m) => m.vibration < limit,
   detail: (m) => `${m.vibration.toFixed(2)} mm/s`,
 });
-const wearCheck = (part: string, limit = 70): CellCheck => ({
+const wearCheck = (part: string, limit: number): CellCheck => ({
   label: `${part} below ${limit}%`,
   ok: (m) => m.toolWear < limit,
   detail: (m) => `${m.toolWear.toFixed(0)}%`,
@@ -64,8 +67,8 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     checks: [
       { label: "Stock above reorder level (100 blanks)", ok: (m) => m.queue >= 100, detail: (m) => `${m.queue} blanks` },
       { label: "CNC-01 is receiving blanks", ok: (_m, { downstream }) => !!downstream && downstream.queue > 0, detail: (_m, { downstream }) => `CNC-01 queue ${downstream?.queue ?? 0}` },
-      tempCheck("Shuttle motor"),
-      wearCheck("Shuttle rail wear"),
+      tempCheck("Shuttle motor", lim("warehouse").temperature.warn),
+      wearCheck("Shuttle rail wear", lim("warehouse").toolWear.warn),
     ],
   },
   cnc1: {
@@ -77,9 +80,9 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     queueLabel: "Blanks waiting",
     charts: ["temp", "vib", "health", "speed", "wear"],
     checks: [
-      tempCheck("Spindle"),
-      vibCheck("Spindle"),
-      wearCheck("Cutter wear"),
+      tempCheck("Spindle", lim("cnc1").temperature.warn),
+      vibCheck("Spindle", lim("cnc1").vibration.warn),
+      wearCheck("Cutter wear", lim("cnc1").toolWear.warn),
       fedCheck("Blanks from AS/RS"),
       outletCheck("the robotic arm"),
     ],
@@ -93,9 +96,9 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     queueLabel: "Parts to transfer",
     charts: ["temp", "vib", "health", "speed", "wear"],
     checks: [
-      tempCheck("Joint servo"),
-      vibCheck("Arm"),
-      wearCheck("Gripper wear"),
+      tempCheck("Joint servo", lim("robot").temperature.warn),
+      vibCheck("Arm joint", lim("robot").vibration.warn),
+      wearCheck("Gripper wear", lim("robot").toolWear.warn),
       fedCheck("Milled parts"),
       outletCheck("CNC-07"),
     ],
@@ -109,9 +112,9 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     queueLabel: "Parts waiting",
     charts: ["temp", "vib", "health", "speed", "wear"],
     checks: [
-      tempCheck("Spindle bearing"),
-      vibCheck("Spindle bearing"),
-      wearCheck("Bearing / tool wear"),
+      tempCheck("Spindle bearing", lim("cnc7").temperature.warn),
+      vibCheck("Spindle bearing", lim("cnc7").vibration.warn),
+      wearCheck("Bearing / tool wear", lim("cnc7").toolWear.warn),
       fedCheck("Parts from the robotic arm"),
       outletCheck("the hydraulic press"),
     ],
@@ -125,9 +128,9 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     queueLabel: "Parts waiting",
     charts: ["temp", "vib", "health", "speed", "wear"],
     checks: [
-      tempCheck("Hydraulic oil", 75),
-      vibCheck("Ram"),
-      wearCheck("Seal / die wear"),
+      tempCheck("Hydraulic oil", lim("press").temperature.warn),
+      vibCheck("Ram", lim("press").vibration.warn),
+      wearCheck("Seal / die wear", lim("press").toolWear.warn),
       fedCheck("Turned parts"),
       outletCheck("the outfeed conveyor"),
     ],
@@ -140,7 +143,7 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     wearLabel: "Tool wear",
     queueLabel: "Rerouted parts",
     charts: ["queue", "temp", "vib", "health", "speed"],
-    checks: [tempCheck("Spindle"), vibCheck("Spindle"), wearCheck("Tool wear")],
+    checks: [tempCheck("Spindle", lim("lathe2").temperature.warn), vibCheck("Spindle", lim("lathe2").vibration.warn), wearCheck("Tool wear", lim("lathe2").toolWear.warn)],
   },
   conveyor: {
     role: "Outfeed conveyor and final QA scan point",
@@ -151,9 +154,14 @@ export const CELL_PROFILES: Record<string, CellProfile> = {
     queueLabel: "Parts on belt",
     charts: ["queue", "temp", "vib", "health", "wear"],
     checks: [
-      tempCheck("Belt drive motor"),
-      vibCheck("Belt"),
-      wearCheck("Belt wear"),
+      tempCheck("Belt drive motor", lim("conveyor").temperature.warn),
+      vibCheck("Belt", lim("conveyor").vibration.warn),
+      wearCheck("Belt wear", lim("conveyor").toolWear.warn),
+      {
+        label: `Belt speed at least ${lim("conveyor").speed.warn}% of commanded`,
+        ok: (m) => !!m.isolated || m.status === "downtime" || speedPct(m) >= lim("conveyor").speed.warn,
+        detail: (m) => `${speedPct(m).toFixed(0)}%`,
+      },
       { label: "Belt not overloaded", ok: (m) => m.queue < m.capacity, detail: (m) => `${m.queue}/${m.capacity} parts` },
     ],
   },

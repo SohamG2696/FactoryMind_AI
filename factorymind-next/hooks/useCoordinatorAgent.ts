@@ -67,7 +67,7 @@ export function useCoordinatorAgent(
         machines: s.machines.map((m) => ({
           id: m.id, code: m.code, label: m.label, status: m.status,
           health: m.health, temperature: m.temperature, vibration: m.vibration,
-          toolWear: m.toolWear, queue: m.queue, utilization: m.utilization, rpm: m.rpm,
+          toolWear: m.toolWear, queue: m.queue, utilization: m.utilization, rpm: m.rpm, targetRpm: m.targetRpm, runTicks: m.runTicks,
           capacity: m.capacity, standby: m.standby, isolated: m.isolated,
         })),
         agvs: s.agvs.map((a) => ({

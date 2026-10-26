@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { failureModeFor, limitsFor, paramLevel, paramValue } from "@/lib/failureModes";
 
 export type MachineKind = "cnc" | "robot" | "conveyor" | "press" | "warehouse";
 export type MachineStatus = "healthy" | "warning" | "critical" | "downtime";
@@ -35,9 +36,10 @@ export interface HistoryPoint {
   queue: number;
 }
 
-/** An injected, gradually developing failure (simulated machine data). */
+/** An injected, gradually developing failure (simulated machine data).
+ *  Each machine has its own failure mode — see lib/failureModes.ts. */
 export interface MachineFailure {
-  mode: "bearing";
+  mode: string;
   label: string;
   severity: number;      // 0.5 (slow) .. 2 (fast)
   progress: number;      // 0..1 — how far the degradation has developed
@@ -46,17 +48,13 @@ export interface MachineFailure {
   plateauTicks: number;  // ticks spent fully developed without isolation
 }
 
-export const FAILURE_MODES = {
-  bearing: { label: "Bearing Wear / Overheating" },
-} as const;
-
 /** Failure progress per tick at severity 1 (fully developed in ~31 s). */
 export const FAILURE_RATE = 0.016;
 
 /** Ticks a fully developed failure survives before the machine breaks down. */
 export const BREAKDOWN_AFTER_TICKS = 120;
 
-/** Post-repair run-in: ~60 s at ≤ 65 % load so a backlog cannot overheat the fresh bearing. */
+/** Post-repair run-in: ~60 s at ≤ 65 % load so a backlog cannot overheat the repaired cell. */
 const RUN_IN_TICKS = 120;
 const RUN_IN_LOAD_CAP = 0.65;
 
@@ -95,6 +93,8 @@ export interface MachineState {
   breakdownTick?: number;
   /** Ticks spent producing (not stopped) — machine uptime. */
   upTicks: number;
+  /** Ticks since the machine last started; 0 while stopped (drives are spinning up). */
+  runTicks?: number;
   /** Controlled restart after a repair: load is capped while the queued backlog drains. */
   runInTicks?: number;
   /** Standby capacity outside the normal line (CNC-05) — only runs when work is rerouted to it. */
@@ -331,10 +331,15 @@ function stationCoord(machines: MachineState[], id: string): { x: number; y: num
   return m ? { x: m.x, y: m.y } : { x: 0, y: 0 };
 }
 
+/** Status from health and the machine's OWN limits (lib/failureModes.ts). */
 function statusFromHealth(m: MachineState): MachineStatus {
   if (m.downtimeTicksLeft > 0 || m.isolated) return "downtime";
-  if (m.health < 45 || m.temperature > 92 || m.vibration > 4.6) return "critical";
-  if (m.health < 72 || m.temperature > 78 || m.vibration > 2.2 || m.toolWear > 70) return "warning";
+  const lim = limitsFor(m.id);
+  // Speed is only judged while a fault is developing — a spindle spinning up after a restart is not slipping.
+  const fp = m.failure ? failureModeFor(m.id).parameter : null;
+  const speedLvl = fp === "speed" ? paramLevel(paramValue(m, "speed"), "speed", lim.speed) : "ok";
+  if (m.health < 45 || m.temperature > lim.temperature.crit || m.vibration > lim.vibration.crit || m.toolWear > lim.toolWear.crit || speedLvl === "crit") return "critical";
+  if (m.health < 72 || m.temperature > lim.temperature.warn || m.vibration > lim.vibration.warn || m.toolWear > lim.toolWear.warn || speedLvl === "warn") return "warning";
   return "healthy";
 }
 
@@ -468,6 +473,7 @@ export function useFactorySim() {
           m.load = 0;
           m.utilization = 0;
           m.throughput *= 0.9;
+          m.runTicks = 0;
           if (!m.failure) {
             m.toolWear = Math.max(0, m.toolWear - 3);
             const raw = 100 - m.toolWear * 0.45 - Math.max(0, m.temperature - 70) * 1.3;
@@ -482,6 +488,7 @@ export function useFactorySim() {
           m.toolWear = Math.max(0, m.toolWear - 3);
           m.health = clamp(m.health + 4, 0, 100);
           m.load = 0;
+          m.runTicks = 0;
           if (m.downtimeTicksLeft === 0) {
             m.health = 96;
             m.toolWear = 0;
@@ -502,25 +509,30 @@ export function useFactorySim() {
           m.load = m.load * 0.7 + utilization * 0.3;
           m.utilization = m.load;
 
-          const rpmCap = m.targetRpm * (1 - m.toolWear / 220);
-          m.rpm += (rpmCap * (0.65 + m.load * 0.5) - m.rpm) * 0.15 + noise(20);
-          if (m.rpm < 0) m.rpm = 0;
-
-          // Injected bearing failure: degrades gradually (wear ↑, friction heat ↑,
-          // bearing vibration ↑). Values are simulated machine data, and they feed
-          // the same physics, ML mapping and agents as any other telemetry.
+          // Injected failure: develops gradually and pushes the machine's own
+          // failure parameter (cutter wear, joint vibration, bearing vibration,
+          // oil temperature, belt speed — lib/failureModes.ts). Values are
+          // simulated machine data, and they feed the same physics, ML mapping
+          // and agents as any other telemetry.
           let faultHeat = 0;
           let faultVib = 0;
+          let speedLoss = 0;
           const f = m.failure;
           if (f) {
+            const fx = failureModeFor(m.id);
             f.progress = Math.min(1, f.progress + FAILURE_RATE * f.severity);
             if (f.progress >= 1) f.plateauTicks += 1;
-            const wearTarget = f.baseWear + f.progress * (75 - f.baseWear);
+            const wearTarget = f.baseWear + f.progress * Math.max(0, fx.effect.wear - f.baseWear);
             m.toolWear = Math.max(m.toolWear, wearTarget);
-            faultHeat = 6 * f.progress;
-            faultVib = 0.8 * f.progress;
-            m.faultTag = f.progress >= 1 ? "BEARING FAILURE" : "BEARING WEAR";
+            faultHeat = fx.effect.heat * f.progress;
+            faultVib = fx.effect.vib * f.progress;
+            speedLoss = fx.effect.speedLoss * f.progress;
+            m.faultTag = f.progress >= 1 ? fx.tag.failed : fx.tag.developing;
           }
+
+          const rpmCap = m.targetRpm * (1 - m.toolWear / 220) * (1 - speedLoss);
+          m.rpm += (rpmCap * (0.65 + m.load * 0.5) - m.rpm) * 0.15 + noise(20);
+          if (m.rpm < 0) m.rpm = 0;
 
           const targetT = m.ambient + 20 + m.load * 45 + m.toolWear * 0.35 + faultHeat;
           m.temperature += (targetT - m.temperature) * 0.05 + noise(0.4);
@@ -538,6 +550,7 @@ export function useFactorySim() {
             100 - m.toolWear * 0.45 - Math.max(0, m.temperature - 70) * 1.3 - Math.max(0, m.vibration - 2) * 5;
           m.health = clamp(m.health * 0.85 + raw * 0.15, 0, 100);
           m.upTicks += 1;
+          m.runTicks = (m.runTicks ?? 0) + 1;
 
           const rate = clamp(m.health / 100, 0.1, 1) * (m.kind === "warehouse" ? 0 : 1);
           const consumed = Math.min(m.queue, Math.random() < rate ? 1 : 0);
@@ -628,7 +641,7 @@ export function useFactorySim() {
           m.status = "downtime";
           pushEvent(next.events, {
             t: next.tick, wallClock, category: "alert", machineId: m.id, kind: "crit", icon: "💥",
-            msg: `${m.code} BREAKDOWN — bearing seized before maintenance; unplanned downtime`,
+            msg: `${m.code} BREAKDOWN — ${failureModeFor(m.id).breakdown} before maintenance; unplanned downtime`,
           });
         } else if (!m.failure && !m.isolated && m.status === "critical" && m.health < 25 && m.downtimeTicksLeft === 0) {
           m.downtimeTicksLeft = 24;
@@ -825,7 +838,7 @@ export function useFactorySim() {
                 targetM.failure = undefined;
                 pushEvent(next.events, {
                   t: next.tick, wallClock, category: "machine", machineId: targetM.id, kind: "ok", icon: "🔧",
-                  msg: `${targetM.code} — simulated bearing replacement complete`,
+                  msg: `${targetM.code} — simulated ${failureModeFor(targetM.id).repairAction} complete`,
                 });
               }
               pushEvent(next.events, {
@@ -869,18 +882,19 @@ export function useFactorySim() {
   // A reset always returns to a clean, healthy, paused factory for the next demo run.
   const reset = () => setState(initialSimState("Simulation reset · all cells healthy · press Start"));
 
-  /** Begin a gradually developing failure on one machine (simulated data). */
-  const injectFailure = (id: string, mode: keyof typeof FAILURE_MODES, severity: number) => {
+  /** Begin a gradually developing failure on one machine (simulated data) — the machine's own failure mode. */
+  const injectFailure = (id: string, severity: number) => {
     setState((s) => {
       const target = s.machines.find((m) => m.id === id);
       if (!target || target.failure || target.isolated) return s;
+      const fm = failureModeFor(id);
       const machines = s.machines.map((m) =>
         m.id === id
           ? {
               ...m,
               breakdownTick: undefined,
               failure: {
-                mode, label: FAILURE_MODES[mode].label, severity,
+                mode: fm.key, label: fm.label, severity,
                 progress: 0, startedTick: s.tick, baseWear: m.toolWear, plateauTicks: 0,
               },
             }
@@ -890,7 +904,7 @@ export function useFactorySim() {
       pushEvent(events, {
         t: s.tick, wallClock: formatWallClock(s.startTs, s.tick, s.simSecondsPerTick), category: "alert",
         machineId: id, kind: "warn", icon: "🧪",
-        msg: `Simulated failure injected · ${FAILURE_MODES[mode].label} on ${target.code} (severity ${severity.toFixed(1)})`,
+        msg: `Simulated failure injected · ${fm.label} on ${target.code} — watch ${fm.parameterLabel.toLowerCase()} (severity ${severity.toFixed(1)})`,
       });
       return { ...s, machines, events };
     });

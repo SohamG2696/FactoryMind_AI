@@ -155,7 +155,25 @@ Each machine evolves:
 | `vibration` | `0.35 + wear·0.035 + load·0.9 + thermal_bump + noise` |
 | `toolWear` | accumulates with load; faster if hot |
 | `health` | 100 − wear·0.45 − max(0, T−70)·1.3 − max(0, vib−2)·5 (smoothed) |
-| `status` | derived → healthy / warning / critical / downtime |
+| `status` | derived → healthy / warning / critical / downtime, against **the machine's own limits** |
+
+**Machine-specific failure modes** (`lib/failureModes.ts`, full table in
+[FAILURE_MODES.md](FAILURE_MODES.md)). Each cell has one failing parameter
+with its own warning / critical limits:
+
+| Cell | Failure mode | Failing parameter | Warn / crit |
+|---|---|---|---|
+| CNC-01 | Cutter wear / tool breakage | cutter wear | 60 / 85 % |
+| Robot | Joint reducer backlash | joint vibration | 1.8 / 3.5 mm/s |
+| CNC-07 | Spindle bearing wear | bearing vibration | 2.2 / 4.5 mm/s |
+| Press | Hydraulic oil overheating | oil temperature | 65 / 80 °C |
+| Conveyor | Belt slip / motor overload | belt speed | < 80 / < 60 % of commanded |
+
+An injected failure adds that mode's heat, vibration, wear and speed loss as
+it develops, so each machine crosses a different limit first. The intervention
+timeline, the Failing Parameter card and the Maintenance Agent's diagnosis all
+name the parameter and give that mode's recommended actions. Repair time and
+repair step come from the mode too.
 
 **Auto-downtime:** if a cell stays critical and health drops < 25,
 downtime is auto-scheduled for 24 ticks. During downtime the machine
@@ -181,6 +199,7 @@ minute ≈ 30 sim-minutes — comfortable for a demo.
 ### User-triggered mutators
 - `play` / `pause` / `setSpeed(1|2|5)` / `reset`
 - `injectFault(id, "wear" | "thermal" | "surge")` — surge affects all
+- `injectFailure(id, severity)` — starts the machine's own failure mode (see above)
 - `dispatchMaintenance(id)` — schedules a 20-tick downtime cycle
 
 ---

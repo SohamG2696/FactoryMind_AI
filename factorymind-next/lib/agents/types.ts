@@ -19,6 +19,10 @@ export interface MachineSnap {
   queue: number;
   utilization: number;
   rpm: number;
+  /** Nominal speed — belt/spindle speed is judged as % of commanded. */
+  targetRpm?: number;
+  /** Ticks since the machine last started. */
+  runTicks?: number;
   capacity?: number;
   /** Standby capacity outside the normal line. */
   standby?: boolean;

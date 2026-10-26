@@ -100,12 +100,13 @@ graph TB
     6. **STORAGE / QC**: Raw material buffers & automated visual inspection stations
   - **Live Physics Loop**: Computes temperature creep, spindle vibration, oil pressure, motor amperage, wear index, and component degradation per clock tick.
   - **Interactive Controls**: Users can inject manual faults (Thermal Overheating, Bearing Vibration, Tool Wear, Power Brownout) to test resilience.
+  - **Machine-Specific Failure Modes**: The Failure Simulator injects each machine's own failure. CNC-01: cutter wear. Robot: joint vibration. CNC-07: spindle bearing vibration. Press: hydraulic oil temperature. Conveyor: belt speed. Each one is judged against that machine's own warning / critical limits, and the UI shows the failing parameter and the recommended actions. See [FAILURE_MODES.md](FAILURE_MODES.md).
 
 ### 3.2 Autonomous Multi-Agent Hierarchy (Agentic Swarm)
 - **Location**: `factorymind-next/lib/agents/`
 - **How it works**:
   - `supervisor.ts`: Coordinates priority arbitration, mission creation, and human-in-the-loop safety approvals.
-  - `maintenance.ts`: Evaluates machine health scores, diagnoses failure modes (e.g., Tool Wear, Bearing Failure, Lubrication Loss), and calculates Remaining Useful Life (RUL).
+  - `maintenance.ts`: Evaluates machine health scores and diagnoses each machine's own failure mode. It names the failing parameter against that machine's limits and attaches the mode's recommended actions (`lib/failureModes.ts`).
   - `workforce.ts`: Matches required maintenance skills (`mechanical`, `electrical`, `robotics`, `hydraulic`, `quality`) against worker availability, fatigue, and shift certifications.
   - `material.ts`: Monitors buffer stock, detects starved cells, and dispatches AGVs for just-in-time replenishment.
   - `safety.ts`: Enforces emergency stops and safe operating envelopes whenever temperature > 90°C or vibration > 8.5 mm/s.

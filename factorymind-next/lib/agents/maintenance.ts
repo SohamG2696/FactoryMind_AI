@@ -1,24 +1,38 @@
 import type { AgentReport, PlantSnapshot, MlPredictionMap, SupervisorContext, MachineSnap } from "./types";
 import { MACHINE_REQUIREMENTS } from "../seedWorkers";
+import { failingParameter, formatParam, limitsFor } from "../failureModes";
 
 /**
  * Maintenance Agent — combines sim health + ML failure probability to
  * decide when a machine needs proactive intervention. Every recommendation
  * gets HUMAN_REQUIRED autonomy since actual repair needs a technician.
  */
-/** Rule-based diagnosis: which failure pattern does the telemetry match? */
-export function diagnose(m: MachineSnap): { diagnosis: string; evidence: string[] } {
+/**
+ * Rule-based diagnosis against the machine's OWN failure signature and limits
+ * (lib/failureModes.ts): the failing parameter is named first, then the other
+ * signals that are outside this machine's normal range.
+ */
+export function diagnose(m: MachineSnap) {
+  const lim = limitsFor(m.id);
+  const fp = failingParameter(m.id, m);
   const evidence: string[] = [];
-  if (m.vibration > 2.2) evidence.push(`Vibration ${m.vibration.toFixed(2)} mm/s above the 2.2 mm/s normal limit`);
-  if (m.temperature > 78) evidence.push(`Temperature ${m.temperature.toFixed(1)} °C above the 78 °C normal range`);
-  if (m.toolWear > 60) evidence.push(`Wear at ${m.toolWear.toFixed(0)}% and rising`);
+  if (fp.level !== "ok") {
+    const which = fp.level === "crit" ? "critical" : "warning";
+    evidence.push(`${fp.label} ${formatParam(fp.value, fp.param)} past the ${m.code} ${which} limit (${formatParam(fp.level === "crit" ? fp.limit.crit : fp.limit.warn, fp.param)})`);
+  }
+  if (fp.param !== "vibration" && m.vibration > lim.vibration.warn) evidence.push(`Vibration ${m.vibration.toFixed(2)} mm/s above the ${lim.vibration.warn} mm/s limit`);
+  if (fp.param !== "temperature" && m.temperature > lim.temperature.warn) evidence.push(`Temperature ${m.temperature.toFixed(1)} °C above the ${lim.temperature.warn} °C limit`);
+  if (fp.param !== "toolWear" && m.toolWear > lim.toolWear.warn) evidence.push(`Wear at ${m.toolWear.toFixed(0)}% and rising`);
   if (m.health < 72) evidence.push(`Health down to ${m.health.toFixed(0)}%`);
-  // Bearing wear shows up as vibration rising together with wear; heat follows.
-  const bearing = m.vibration > 2.2 && m.toolWear > 60;
-  const hot = m.temperature > 78;
+  // The machine's own failure mode when its failure parameter has drifted; otherwise a generic finding.
+  const hot = m.temperature > lim.temperature.warn;
+  const diagnosis = fp.level !== "ok" ? fp.mode.label : hot ? "Thermal overload" : "Mechanical degradation";
   return {
-    diagnosis: bearing ? (hot ? "Bearing wear / overheating" : "Bearing wear") : hot ? "Thermal overload" : "Mechanical degradation",
+    diagnosis,
     evidence,
+    failingParameter: fp.level !== "ok" ? { key: fp.param, label: fp.label, value: fp.value, level: fp.level } : null,
+    recommendedActions: fp.level !== "ok" ? fp.mode.recommendedActions : ["Inspect the cell and its last maintenance record"],
+    repairAction: fp.level !== "ok" ? fp.mode.repairAction : "general repair",
   };
 }
 
@@ -41,18 +55,21 @@ export function maintenanceAgent(
     const pred = ml[m.code];
     const failProb = pred?.failureProbability ?? 0;
     const highML = failProb > 0.55;
-    const critHealth = m.health < 45 || m.temperature > 90 || m.vibration > 4.5;
+    const lim = limitsFor(m.id);
+    const critHealth =
+      m.health < 45 || m.temperature > lim.temperature.crit || m.vibration > lim.vibration.crit ||
+      failingParameter(m.id, m).level === "crit";
     const warnZone = m.toolWear > 75 || m.health < 65;
 
     if (highML || critHealth) {
       const req = MACHINE_REQUIREMENTS[m.code];
-      const { diagnosis, evidence } = diagnose(m);
+      const { diagnosis, evidence, failingParameter: fParam, recommendedActions, repairAction } = diagnose(m);
       if (highML) evidence.push(`ML failure probability ${(failProb * 100).toFixed(1)}% above the 55% threshold`);
       const plan = [
         { step: `Isolate and stop ${m.code}`, autonomy: "APPROVAL_REQUIRED" },
         { step: "Create maintenance mission", autonomy: "SAFE" },
         { step: "Assign best-matched technician (Workforce Agent)", autonomy: "SAFE" },
-        { step: diagnosis.startsWith("Bearing") ? "Replace bearing (simulated repair)" : "Repair cell (simulated)", autonomy: "HUMAN_REQUIRED" },
+        { step: `${repairAction[0].toUpperCase()}${repairAction.slice(1)} (simulated repair)`, autonomy: "HUMAN_REQUIRED" },
         { step: "Verify temperature, vibration, health and ML risk", autonomy: "SAFE" },
         { step: "Resume production", autonomy: "SAFE" },
       ];
@@ -71,6 +88,8 @@ export function maintenanceAgent(
             `Diagnosis: ${diagnosis}.`,
           diagnosis,
           evidence,
+          failingParameter: fParam,
+          recommendedActions,
           plan,
           mlPrediction: pred,
           expectedImpact: {
@@ -92,9 +111,11 @@ export function maintenanceAgent(
           purpose: "isolate_for_maintenance",
           diagnosis,
           evidence,
+          failingParameter: fParam,
+          recommendedActions,
           failureProbability: failProb,
         },
-        reason: `Isolate ${m.code} before repair — ${diagnosis.toLowerCase()} (ML ${(failProb * 100).toFixed(0)}%, health ${m.health.toFixed(0)}%)`,
+        reason: `Isolate ${m.code} before repair — ${diagnosis.toLowerCase()}${fParam ? `, ${fParam.label.toLowerCase()} ${formatParam(fParam.value, fParam.key)}` : ""} (ML ${(failProb * 100).toFixed(0)}%, health ${m.health.toFixed(0)}%)`,
         autonomyLevel: "APPROVAL_REQUIRED",
         agentName: "MaintenanceAgent",
         targetSupervisorId: supFor(m.code),

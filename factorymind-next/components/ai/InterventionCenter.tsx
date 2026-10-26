@@ -8,6 +8,8 @@ import {
 import { useSim } from "@/context/FactorySimContext";
 import type { Intervention, InterventionPhase, TimelineEntry } from "@/hooks/useIntervention";
 import type { MachineState, SimState } from "@/hooks/useFactorySim";
+import { limitsFor } from "@/lib/failureModes";
+import FailingParameterCard from "@/components/ai/FailingParameter";
 
 /* ───────────────────────── shared pieces ───────────────────────── */
 
@@ -74,6 +76,7 @@ export function ImpactSummary({ iv }: { iv: Intervention }) {
       </div>
       <div className="ai-impact-grid">
         <div><span>Failure</span><strong>{iv.failureLabel} · {iv.machineCode}</strong></div>
+        <div><span>Failing parameter</span><strong>{iv.parameter.label}</strong></div>
         <div><span>Time to detect</span><strong>{secs(iv.injectedAt, iv.detectedAt)}</strong></div>
         <div><span>Time to reroute</span><strong>{secs(iv.detectedAt, iv.rerouteAt)}</strong></div>
         <div><span>Time to recover</span><strong>{secs(iv.actingAt, iv.recoveredAt)}</strong></div>
@@ -113,7 +116,7 @@ export function ImpactSummary({ iv }: { iv: Intervention }) {
             <span className="ai-card-title">HUMANS DID</span>
             <ul>
               {iv.approval && iv.approval.status !== "auto" && <li>⚠ {iv.approval.status === "operator-stop" ? "Stopped the machine" : "Approved isolation"} ({iv.approval.by})</li>}
-              <li>⚠ Bearing replacement — physical work (simulated here)</li>
+              <li>⚠ {iv.repairAction[0].toUpperCase() + iv.repairAction.slice(1)} — physical work (simulated here)</li>
             </ul>
           </div>
         </div>
@@ -188,14 +191,14 @@ function stages(iv: Intervention, st: SimState, m: MachineState | undefined, wor
       detail: [
         rr ? "🔀 rerouted to CNC-05" : null,
         iv.actingAt ? "⏸ isolated" : null,
-        workerStatus === "moving" ? `${iv.technician?.name} en route` : workerStatus === "on_task" ? `bearing replacement ${Math.round((workerProgress ?? 0) * 100)}%` : iv.repairDoneAt ? "repair done" : null,
+        workerStatus === "moving" ? `${iv.technician?.name} en route` : workerStatus === "on_task" ? `${iv.repairAction} ${Math.round((workerProgress ?? 0) * 100)}%` : iv.repairDoneAt ? "repair done" : null,
       ].filter(Boolean).join(" · ") || "Isolate, reroute, dispatch",
     },
     {
       key: "verify", label: "VERIFY", icon: faMagnifyingGlass,
       state: (iv.recoveredAt ? "done" : iv.repairDoneAt ? "active" : "todo") as StepState,
       detail: iv.repairDoneAt && m
-        ? `${m.temperature < 75 ? "✓" : "…"} temp · ${m.vibration < 2.2 ? "✓" : "…"} vib · ${m.health > 85 ? "✓" : "…"} health · ${iv.flags.mlVerified ? "✓ ML" : "… ML"} · ${!iv.flags.rerouted || iv.flags.restored ? "✓ plan" : "… plan"}`
+        ? `${m.temperature < Math.min(75, limitsFor(m.id).temperature.warn) ? "✓" : "…"} temp · ${m.vibration < limitsFor(m.id).vibration.warn ? "✓" : "…"} vib · ${m.health > 85 ? "✓" : "…"} health · ${iv.flags.mlVerified ? "✓ ML" : "… ML"} · ${!iv.flags.rerouted || iv.flags.restored ? "✓ plan" : "… plan"}`
         : "Telemetry, ML risk and original plan",
     },
     {
@@ -304,6 +307,8 @@ export default function InterventionCenter() {
     <section className="ai-center">
       {head}
       <StageStepper iv={iv} />
+
+      {m && <FailingParameterCard m={m} />}
 
       <div className="ai-center-grid">
         {/* ML detection */}

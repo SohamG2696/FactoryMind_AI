@@ -7,6 +7,8 @@ import type { AgentDecision } from "@/hooks/useCoordinatorAgent";
 import type { MlPredictionMap } from "@/lib/agents/types";
 import type { RecoveryPlan } from "@/lib/agents/recovery";
 import type { UserAccount, UserRole } from "@/context/AuthContext";
+import { failingParameter, failureModeFor, formatLimits, formatParam, limitsFor, PARAM_META } from "@/lib/failureModes";
+import type { FailureParam, Limit } from "@/lib/failureModes";
 
 /**
  * AI intervention controller.
@@ -45,6 +47,10 @@ export interface Intervention {
   machineCode: string;
   machineLabel: string;
   failureLabel: string;
+  /** The machine-specific parameter this failure drives, with the machine's own limits. */
+  parameter: { key: FailureParam; label: string; unit: string; limit: Limit; component: string; cause: string };
+  recommendedActions: string[];
+  repairAction: string;
   severity: number;
   phase: InterventionPhase;
   requireApproval: boolean;
@@ -271,26 +277,32 @@ export function useIntervention(
       return;
     }
 
-    // OBSERVE: sensor anomalies (simulated telemetry crossing normal limits)
-    const anomalyPatch = next.phase === "OBSERVING" ? { phase: "ANOMALY_DETECTED" as InterventionPhase, anomalyAt: Date.now() } : {};
+    // OBSERVE: sensor anomalies — simulated telemetry crossing THIS machine's limits.
+    // The failing parameter is reported first, against its warning and critical limits.
+    const anomaly = () => (next.phase === "OBSERVING" ? { phase: "ANOMALY_DETECTED" as InterventionPhase, anomalyAt: Date.now() } : {});
     if (!m.isolated) {
-      if (m.temperature > 78) next = withEntry(next, "tempAnomaly", "⚠", "warn", `Temperature anomaly — ${m.temperature.toFixed(1)} °C (normal < 78 °C)`, anomalyPatch);
-      if (m.vibration > 2.2) next = withEntry(next, "vibAnomaly", "⚠", "warn", `Vibration increasing — ${m.vibration.toFixed(2)} mm/s (normal < 2.2)`, next.phase === "OBSERVING" ? anomalyPatch : {});
-      if (m.health < 72) next = withEntry(next, "healthDrop", "⚠", "warn", `Health dropping — ${m.health.toFixed(0)}%`, next.phase === "OBSERVING" ? anomalyPatch : {});
+      const lim = limitsFor(m.id);
+      const fp = failingParameter(m.id, m);
+      const fpText = `${fp.label} ${formatParam(fp.value, fp.param)}`;
+      if (fp.level !== "ok") next = withEntry(next, "paramWarn", "⚠", "warn", `Failing parameter: ${fpText} crossed the ${m.code} warning limit (${formatParam(fp.limit.warn, fp.param)})`, anomaly());
+      if (fp.level === "crit") next = withEntry(next, "paramCrit", "🔴", "crit", `Failing parameter: ${fpText} crossed the ${m.code} CRITICAL limit (${formatParam(fp.limit.crit, fp.param)})`);
+      if (fp.param !== "temperature" && m.temperature > lim.temperature.warn) next = withEntry(next, "tempAnomaly", "⚠", "warn", `Temperature anomaly — ${m.temperature.toFixed(1)} °C (normal < ${lim.temperature.warn} °C)`, anomaly());
+      if (fp.param !== "vibration" && m.vibration > lim.vibration.warn) next = withEntry(next, "vibAnomaly", "⚠", "warn", `Vibration increasing — ${m.vibration.toFixed(2)} mm/s (normal < ${lim.vibration.warn})`, anomaly());
+      if (m.health < 72) next = withEntry(next, "healthDrop", "⚠", "warn", `Health dropping — ${m.health.toFixed(0)}%`, anomaly());
       if (m.status === "critical") next = withEntry(next, "critical", "🔴", "crit", `${m.code} entered CRITICAL condition — ${m.temperature.toFixed(0)} °C · ${m.vibration.toFixed(1)} mm/s · health ${m.health.toFixed(0)}%`);
     }
 
     // ACT → RECOVERY → VERIFY: follow the technician and the machine
     const worker = s.state.activeWorkers.find((w) => w.targetMachineCode === m.code);
     if (next.actingAt && worker?.status === "on_task") {
-      next = withEntry(next, "repairStart", "🔧", "info", `Simulated bearing replacement started by ${worker.name}`, { phase: "RECOVERY", repairStartedAt: Date.now() });
+      next = withEntry(next, "repairStart", "🔧", "info", `Simulated ${next.repairAction} started by ${worker.name}`, { phase: "RECOVERY", repairStartedAt: Date.now() });
     }
     if (next.flags.repairStart && !m.failure && !next.flags.repairDone) {
-      next = withEntry(next, "repairDone", "✓", "ok", "Simulated repair executed — bearing replaced (simulated, not a physical repair)", { phase: "VERIFYING", repairDoneAt: Date.now() });
+      next = withEntry(next, "repairDone", "✓", "ok", `Simulated repair executed — ${next.repairAction} (simulated, not a physical repair)`, { phase: "VERIFYING", repairDoneAt: Date.now() });
       patchMission(next.missionId, "verify", "Simulated repair executed");
-      audit({ agentName: "WorkforceAgent", phase: "act", machineCode: m.code, missionId: next.missionId, action: "simulated bearing replacement", autonomyLevel: "HUMAN_REQUIRED", outcome: `Executed by ${next.technician?.name ?? "crew"}` });
+      audit({ agentName: "WorkforceAgent", phase: "act", machineCode: m.code, missionId: next.missionId, action: `simulated ${next.repairAction}`, autonomyLevel: "HUMAN_REQUIRED", outcome: `Executed by ${next.technician?.name ?? "crew"}` });
     }
-    if (next.flags.repairDone && !next.flags.resumed && m.isolated && !worker && m.temperature < 75 && m.health > 85) {
+    if (next.flags.repairDone && !next.flags.resumed && m.isolated && !worker && m.temperature < Math.min(75, limitsFor(m.id).temperature.warn) && m.health > 85) {
       s.releaseMachine(m.id, "AI verified cool-down and health", true);
       next = withEntry(next, "resumed", "▶", "ok", `${m.code} restarted — production resumed (controlled run-in${m.queue ? ` while ${m.queue} queued parts drain` : ""})`, { resumedAt: Date.now() });
     }
@@ -450,21 +462,26 @@ export function useIntervention(
     }).catch(() => {});
 
     if (active) setPast((p) => [...p, active].slice(-10));
-    s.injectFailure(machineId, "bearing", severity);
+    s.injectFailure(machineId, severity);
+    const fm = failureModeFor(machineId);
+    const limit = limitsFor(machineId)[fm.parameter];
     const now = Date.now();
     const iv: Intervention = {
       id: `IV-${now.toString().slice(-6)}`,
       machineId, machineCode: m.code, machineLabel: m.label,
-      failureLabel: "Bearing Wear / Overheating", severity,
+      failureLabel: fm.label, severity,
+      parameter: { key: fm.parameter, label: fm.parameterLabel, unit: PARAM_META[fm.parameter].unit, limit, component: fm.component, cause: fm.cause },
+      recommendedActions: fm.recommendedActions,
+      repairAction: fm.repairAction,
       phase: "OBSERVING", requireApproval, injectedAt: now,
       peakProbability: 0, evidence: [], plan: [], humanApprovals: 0, flags: {},
       timeline: [
         { at: now, clock: s.wallClock, icon: "✓", kind: "ok", msg: `${m.code} operating normally — health ${m.health.toFixed(0)}%, ${m.temperature.toFixed(0)} °C, ${m.vibration.toFixed(2)} mm/s` },
-        { at: now, clock: s.wallClock, icon: "🧪", kind: "warn", msg: `Simulated failure injected: bearing wear / overheating (severity ${severity.toFixed(1)}) — AI is observing` },
+        { at: now, clock: s.wallClock, icon: "🧪", kind: "warn", msg: `Simulated failure injected: ${fm.label.toLowerCase()} (severity ${severity.toFixed(1)}) — AI is watching ${fm.parameterLabel.toLowerCase()} (${formatLimits(fm.parameter, limit)})` },
       ],
     };
     setIntervention(iv);
-    audit({ agentName: "Simulation", phase: "observe", machineCode: m.code, action: "inject_failure bearing", outcome: `Injected by ${userRef.current?.name ?? role}` });
+    audit({ agentName: "Simulation", phase: "observe", machineCode: m.code, action: `inject_failure ${fm.key}`, outcome: `Injected by ${userRef.current?.name ?? role}` });
     return { ok: true };
   }, [isManager, requireApproval, role]);
 

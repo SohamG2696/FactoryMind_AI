@@ -25,6 +25,8 @@ import { ChartCard } from "@/components/FactorySimulation";
 import { issueFor } from "@/components/MaintenanceSection";
 import { PhaseBadge, StageStepper, InterventionTimeline, ImpactSummary } from "@/components/ai/InterventionCenter";
 import { profileFor } from "@/lib/cellProfiles";
+import { failingParameter, formatParam, limitsFor } from "@/lib/failureModes";
+import FailingParameterCard from "@/components/ai/FailingParameter";
 
 function machineStatusLabel(m: MachineState): { label: string; tone: string } {
   if (m.isolated) return { label: "STOPPED · ISOLATED", tone: "downtime" };
@@ -40,8 +42,10 @@ function recommendation(m: MachineState, iv: Intervention | null, prob: number |
     const tech = iv.technician?.name ?? "the maintenance crew";
     switch (iv.phase) {
       case "OBSERVING":
-      case "ANOMALY_DETECTED":
-        return `AI is watching ${m.code}'s rising temperature and vibration. Keep monitoring.`;
+      case "ANOMALY_DETECTED": {
+        const fp = failingParameter(m.id, m);
+        return `AI is watching ${m.code}'s ${fp.label.toLowerCase()} (${formatParam(fp.value, fp.param)}). First action when it goes critical: ${fp.mode.recommendedActions[0].toLowerCase()}.`;
+      }
       case "PREDICTING":
       case "REASONING":
         return `Failure risk is rising. Be ready to stop ${m.code}.`;
@@ -51,10 +55,10 @@ function recommendation(m: MachineState, iv: Intervention | null, prob: number |
       case "ACTING":
       case "RECOVERY":
         return workerStatus === "moving"
-          ? `${m.code} is isolated. ${tech} is on the way to replace the bearing — do not restart.`
-          : `${m.code} is isolated. ${tech} is performing the simulated bearing replacement — do not restart.`;
+          ? `${m.code} is isolated. ${tech} is on the way for the ${iv.repairAction} — do not restart.`
+          : `${m.code} is isolated. ${tech} is performing the simulated ${iv.repairAction} — do not restart.`;
       case "VERIFYING":
-        return "Repair done. AI is verifying temperature, vibration, health and ML risk before restart.";
+        return `Repair done. AI is verifying ${iv.parameter.label.toLowerCase()}, temperature, vibration, health and ML risk before restart.`;
       case "RECOVERED":
         return `${m.code} verified healthy — production resumed.`;
       case "FAILED":
@@ -63,7 +67,7 @@ function recommendation(m: MachineState, iv: Intervention | null, prob: number |
   }
   if (prob !== null && prob >= 0.55) return `Stop ${m.code} and request maintenance.`;
   if (m.status === "critical") return "Critical condition — request maintenance now.";
-  if (m.status === "warning") return "Degrading — keep an eye on temperature and wear.";
+  if (m.status === "warning") return `Degrading — keep an eye on ${failingParameter(m.id, m).label.toLowerCase()}.`;
   return "Operating within normal limits.";
 }
 
@@ -229,6 +233,7 @@ export default function OperatorMachineView({ machineCode }: { machineCode: stri
             <PhaseBadge phase={iv.phase} />
           </div>
           <StageStepper iv={iv} compact />
+          <FailingParameterCard m={m} />
           {(iv.phase === "RECOVERED" || iv.phase === "FAILED") && <ImpactSummary iv={iv} />}
         </div>
       )}
@@ -246,8 +251,8 @@ export default function OperatorMachineView({ machineCode }: { machineCode: stri
           <div className="op-stat-grid">
             <div><span>Health</span><strong className={m.health < 45 ? "op-crit" : ""}>{m.health.toFixed(0)}%</strong></div>
             <div><span>{profile.speedLabel}</span><strong>{m.rpm.toFixed(0)} {profile.speedUnit}</strong></div>
-            <div><span>Temperature</span><strong className={m.temperature > 78 ? "op-crit" : ""}>{m.temperature.toFixed(1)} °C</strong></div>
-            <div><span>Vibration</span><strong className={m.vibration > 2.2 ? "op-crit" : ""}>{m.vibration.toFixed(2)} mm/s</strong></div>
+            <div><span>Temperature</span><strong className={m.temperature > limitsFor(m.id).temperature.warn ? "op-crit" : ""}>{m.temperature.toFixed(1)} °C</strong></div>
+            <div><span>Vibration</span><strong className={m.vibration > limitsFor(m.id).vibration.warn ? "op-crit" : ""}>{m.vibration.toFixed(2)} mm/s</strong></div>
             <div><span>{profile.wearLabel}</span><strong>{m.toolWear.toFixed(0)}%</strong></div>
             {isWarehouse ? (
               <div><span>{profile.queueLabel}</span><strong>{m.queue} blanks</strong></div>

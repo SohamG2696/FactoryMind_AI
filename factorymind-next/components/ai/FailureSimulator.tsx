@@ -5,14 +5,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFlask, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { useSim } from "@/context/FactorySimContext";
 import { FAILURE_RATE } from "@/hooks/useFactorySim";
+import { failureModeFor, formatLimits, limitsFor } from "@/lib/failureModes";
 
 const SEVERITY_LABEL = (s: number) => (s < 0.8 ? "Low" : s < 1.4 ? "Medium" : "High");
 
 /**
  * Failure Simulator — supervisor/admin control bar for the demo scenario.
  * Play / speed / Reset live in the simulation header above; this bar only injects failures.
- * Injection starts a gradually developing bearing failure in the simulation;
- * everything after that (ML, agents, approval, repair) is the real pipeline.
+ * Injection starts the selected machine's own failure mode (lib/failureModes.ts),
+ * which drives one parameter past that machine's limits; everything after that
+ * (ML, agents, approval, repair) is the real pipeline.
  */
 export default function FailureSimulator() {
   const { state, ai, agentEnabled, setAgentEnabled } = useSim();
@@ -22,6 +24,8 @@ export default function FailureSimulator() {
   const [message, setMessage] = useState<string | null>(null);
   const iv = ai.intervention;
   const active = !!iv && !["RECOVERED", "FAILED"].includes(iv.phase);
+  const mode = failureModeFor(machineId);
+  const limit = limitsFor(machineId)[mode.parameter];
 
   if (!ai.isManager) return null;
 
@@ -61,8 +65,8 @@ export default function FailureSimulator() {
 
         <label className="ai-field">
           <span>Failure mode</span>
-          <select value="bearing" disabled>
-            <option value="bearing">Bearing Wear / Overheating</option>
+          <select value={mode.key} disabled title="Each machine has its own failure mode">
+            <option value={mode.key}>{mode.label}</option>
           </select>
         </label>
 
@@ -89,6 +93,11 @@ export default function FailureSimulator() {
         <button className="ai-btn inject" onClick={onInject} disabled={!state.running || active}>
           <FontAwesomeIcon icon={faTriangleExclamation} /> Inject failure
         </button>
+      </div>
+
+      <div className="ai-muted small">
+        <strong>Failing parameter:</strong> {mode.parameterLabel} — {formatLimits(mode.parameter, limit)}.{" "}
+        <strong>Cause:</strong> {mode.cause}
       </div>
     </section>
   );

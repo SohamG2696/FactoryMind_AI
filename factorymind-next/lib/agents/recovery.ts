@@ -1,4 +1,5 @@
 import type { AgentAction, AgentReport, MachineSnap, MlPredictionMap, PlantSnapshot } from "./types";
+import { failureModeFor } from "../failureModes";
 
 /**
  * Factory-level recovery — "what happens to the whole line if this cell fails,
@@ -19,7 +20,6 @@ export const BACKUP_CELL: Record<string, string> = { "CELL-04": "CELL-07" };
 
 const SIM_MIN_PER_TICK = 0.5;     // 30 sim-seconds per tick
 const PARTS_PER_TICK = 0.9;       // a healthy cell consumes ~1 part per tick
-const EXPECTED_REPAIR_MIN = 25;   // technician travel + bearing replacement + verification
 const BACKUP_RATE = 0.7;          // standby lathe runs at 70 % of CNC-07
 
 export interface CascadeStep {
@@ -59,6 +59,8 @@ export function analyzeImpact(snap: PlantSnapshot, code: string): ImpactAnalysis
   if (idx < 0) return null;
   const by = new Map(snap.machines.map((m) => [m.code, m]));
   const failed = by.get(code)!;
+  // Machine-specific repair time (cutter swap is quicker than a reducer or hydraulic job).
+  const EXPECTED_REPAIR_MIN = failureModeFor(failed.id).repairMinutes;
   const backupCode = BACKUP_CELL[code];
   const backup = backupCode ? by.get(backupCode) : undefined;
   const backupOk = !!backup && backup.status !== "critical" && backup.status !== "downtime";
@@ -179,7 +181,7 @@ export function recoveryAgents(
     steps.push(
       { key: "material", step: "Rebalance material release (AS/RS throttle)", agent: "Material Agent", autonomy: "SAFE" },
       { key: "protect", step: "Keep downstream cells fed (no starvation)", agent: "Production Agent", autonomy: "SAFE" },
-      { key: "repair", step: `Repair ${code} in parallel (simulated)`, agent: "Technician", autonomy: "HUMAN_REQUIRED" },
+      { key: "repair", step: `${code}: ${failureModeFor(m.id).repairAction} in parallel (simulated)`, agent: "Technician", autonomy: "HUMAN_REQUIRED" },
       { key: "restore", step: "Verify and restore the original production plan", agent: "Supervisor Agent", autonomy: "SAFE" },
     );
     plan = plan ?? { machineCode: code, impact, steps };
